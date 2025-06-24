@@ -2,7 +2,8 @@ from typing import Type, cast
 
 from dotenv import load_dotenv
 
-from .agent import LLM, Agent, Playback, Random, Swarm
+from .agent import LLM, Agent, Playback, Random
+from .swarm import Swarm
 from .recorder import Recorder
 
 load_dotenv()

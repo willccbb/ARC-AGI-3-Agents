@@ -2,82 +2,34 @@
 
 ARC-AGI-3-Agents is a set of AI Agents designed to run against ARC-AGI-3, which is a set of novel, fun, ARC-like games which require only Core Knowledge to win. The games follow a data format similar to ARC-AGI-1 and ARC-AGI-2. However, instead of static input/output pairs with fixed answers, games are now dynamic.
 
-## Changelog
-TODO:
----
+## Quickstart
 
-## Getting Started
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if not aready installed.
 
-1. First install [uv](https://docs.astral.sh/uv/getting-started/installation/) if not aready installed.
-
-2. Then clone the repo and enter the directory.
+1. Clone the ARC-AGI-3-Agents repo and enter the directory.
 
 ```bash
 git clone https://github.com/arcprize/ARC-AGI-3-Agents.git
+cd ARC-AGI-3-Agents
 ```
 
-3. Input your API key from the [ARC-AGI-3 Website](https://sandbox.internal.arc-prize.com/)
+2. Copy over .env_example to .env
 
 ```bash
-echo "ARC_API_KEY=your_api_key" > .env
+cp .env_example .env
 ```
 
-4. Run the random against against all games
+3. Input your API key from the [ARC-AGI-3 Website](https://sandbox.internal.arc-prize.com/) into the .env file.
 
-```bash
-uv run main.py --agent=random
-```
-
-## AI play testing
-
-AI interacts with games via JSON-based REST API by sending actions and receiving game grids to `WIN` (and avoid `GAME_OVER`). Each game grid is 2D with a maximum dimension of `INT<0,63>, INT<0,63>`. Each grid is made up of grid cells represented by `INT<0,15>`. A sequence of grids makes a frame. Every game uses the same universal set of actions (documented below). However, action semantics are game specific.
-
-There are several AI agents included in the respository you can begin to experiment with (or add your own)! The list of included agents:
-
-* `random`
-* `llm`
-* `fastllm`
-* `guidedllm`
-* `rlagent`
-
-Note: LLM uses OpenAI models, place your OpenAI API key in `.env`
-
-Run one like this, which opens a browser to view gameplay:
-
-```bash
-uv run main.py --agent=random
-```
-
-By default, this will create a swarm of agents to play all `GAMES` available to your key. You can just play one specific game like this:
+4. Run the random agent (generates random actions) against the locksmith game.
 
 ```bash
 uv run main.py --agent=random --game=locksmith
 ```
 
-### Recording and playback
+## Agents
 
-All Games are automatically recorded and stored in `recordings/` with GUID-based filenames.
-
-## Agent API Reference
-
-TODO: Write up how to write an agent.
-
-Mainly override these two methods:
-
-```python
-class YourAgent(Agent):
-    def is_done(self, frames: list[FrameData], latest_frame: FrameData) -> bool:
-        # TODO: Immplement
-        return false    
-
-    def choose_action(
-        self, frames: list[FrameData], latest_frame: FrameData
-    ) -> GameAction:
-        # TODO: Immplement
-        action = GameAction.ACTION1
-        action.set_data({"game_id": self.game_id})
-        return action
-```
+For detailed information about AI play testing, creating custom agents, and the Agent API Reference, see the [Agents Documentation](agents/README.md).
 
 ## REST API Reference
 
@@ -340,10 +292,6 @@ RESPONSE:
     },
 }
 ```
-
-## Environment Settings
-
-You can change local settings (eg. what games available) via the `.env` file. Copy `.env-example` to `.env` first to make changes.
 
 ## Contributing
 
