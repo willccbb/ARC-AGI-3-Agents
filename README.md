@@ -58,7 +58,28 @@ uv run main.py --agent=random --game=locksmith
 
 All Games are automatically recorded and stored in `recordings/` with GUID-based filenames.
 
-## API Reference
+## Agent API Reference
+
+TODO: Write up how to write an agent.
+
+Mainly override these two methods:
+
+```python
+class YourAgent(Agent):
+    def is_done(self, frames: list[FrameData], latest_frame: FrameData) -> bool:
+        # TODO: Immplement
+        return false    
+
+    def choose_action(
+        self, frames: list[FrameData], latest_frame: FrameData
+    ) -> GameAction:
+        # TODO: Immplement
+        action = GameAction.ACTION1
+        action.set_data({"game_id": self.game_id})
+        return action
+```
+
+## REST API Reference
 
 ### Get list of all games
 

@@ -341,7 +341,7 @@ class Playback(Agent):
 class Random(Agent):
     """An agent that always selects actions at random."""
 
-    MAX_ACTIONS = 25
+    MAX_ACTIONS = 100
 
     @property
     def name(self) -> str:
