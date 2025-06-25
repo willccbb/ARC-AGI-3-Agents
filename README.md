@@ -262,6 +262,10 @@ RESPONSE:
 }
 ```
 
+## Contest Submission
+
+Contest submissions are made by submitting this [Google Form](https://forms.gle/1234567890) (WIP). The form will ask for your agent name, a link to your agent's GitHub repo, and a link to your agent's scorecard, and a writeup of your agent's approach.
+
 ## Contributing
 
 Install dev dependencies:
