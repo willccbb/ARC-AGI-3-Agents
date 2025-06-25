@@ -1,7 +1,10 @@
+import json
 from enum import Enum
 from typing import Any, Optional, Type, Union
 
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field, computed_field, field_validator
+
+MAX_REASONING_BYTES = 16 * 1024  # 16KB Max
 
 
 class GameState(str, Enum):
@@ -127,6 +130,7 @@ class GameAction(Enum):
 
     action_type: Union[Type[SimpleAction], Type[ComplexAction]]
     action_data: Union[SimpleAction, ComplexAction]
+    reasoning: Optional[Any]
 
     def __init__(
         self,
@@ -178,6 +182,24 @@ class GameAction(Enum):
 class ActionInput(BaseModel):
     id: GameAction = GameAction.RESET
     data: dict[str, Any] = {}
+    reasoning: Optional[Any] = Field(
+        default=None,
+        description="Opaque client-supplied blob; stored & echoed back verbatim.",
+    )
+
+    # Optional size / serialisability guard
+    @field_validator("reasoning")
+    @classmethod
+    def _check_reasoning(cls, v: Any) -> Any:
+        if v is None:
+            return v  # field omitted → fine
+        try:
+            raw = json.dumps(v, separators=(",", ":")).encode("utf-8")
+        except (TypeError, ValueError):
+            raise ValueError("reasoning must be JSON-serialisable")
+        if len(raw) > MAX_REASONING_BYTES:
+            raise ValueError(f"reasoning exceeds {MAX_REASONING_BYTES} bytes")
+        return v
 
 
 class FrameData(BaseModel):
