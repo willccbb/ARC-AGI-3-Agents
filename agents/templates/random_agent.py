@@ -1,4 +1,6 @@
 import random
+import time
+from typing import Any
 
 from ..agent import Agent
 from ..structs import FrameData, GameAction, GameState
@@ -8,6 +10,11 @@ class Random(Agent):
     """An agent that always selects actions at random."""
 
     MAX_ACTIONS = 100
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        seed = int(time.time() * 1000000) + hash(self.game_id) % 1000000
+        random.seed(seed)
 
     @property
     def name(self) -> str:
