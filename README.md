@@ -61,7 +61,7 @@ RESPONSE:
 
 In order for scoring to be tracked you must open a scordcard. When openning a score card you can provide an optional `source_url` and `tags`.
 
-**Note:** The built it `Swarm` class in `agents/agent.py` handles openning, closing, and displaying a scorecard for you.
+**Note:** The built it `Swarm` class in `agents/swarm.py` handles openning, closing, and displaying a scorecard for you.
 
 ```bash
 curl https://sandbox.internal.arc-prize.com/api/scorecard/open \
@@ -197,38 +197,7 @@ RESPONSE:
 }
 ```
 
-### Send simple action to a game, receive frame
-
-All allowable actions:
-* `RESET`
-* `ACTION1`
-* `ACTION2`
-* `ACTION3`
-* `ACTION4`
-* `ACTION5`
-* `ACTION6` `{x: INT<0,63>, y: INT<0,63>}`
-
-Actions 1 through 5 are simple actions that represent a single input into the game. Action 6 is a complex action which requires you to also send an `x, y` game grid coordinate.
-
-Games are allowed to assign semantics to both simple and complex actions however they see fit. For example, a game could assign the following semantics:
-* `ACTION1`: move left
-* `ACTION2`: move right
-* `ACTION3`: move up
-* `ACTION4`: move down
-* `ACTION5`: use
-* `ACTION6`: select cell `x, y`
-
-Discovering and interpretting semantics is intentionally part of the challenge.
-
-Every action will result in at least one grid in the frame. However, some games may occasionally return multiples frame grids per action in order to show sequential intermediate game states.
-
-For example, if a player pushes a object in the middle of the grid, a game may return sequential grids showing the object moving one grid cell at a time all the way to the edge of the grid.
-
-**Important:** Unlike most modern video games, ARC-AGI-3 game state _never_ advances without player input! ARC-AGI-3 is an intelligence test that measures efficiency by action count, not response time.
-
-Every action response contains a `score` with range `INT<0,254>`. Like action, score is sematic. Each game is free to interpret score as it sees fit. Some games do not use a score at all (and will always be `0`). Other games may only use a partial range. There is no universal score to indicate a game was been won. Therefore it is most useful as a relative indicator. Achieving a high score itself is explicitly _not_ a goal in ARC-AGI-3.
-
-**Important:** Beating a level is indicated by an incrementing of the score by one _and_ a two or more frames being returned in the response.  This is how the human UI on the frontend knows to display the "Firework" animation.
+### Game Actions
 
 ```bash
 curl https://sandbox.internal.arc-prize.com/api/cmd/ACTION1 \

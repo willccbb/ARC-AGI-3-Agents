@@ -183,18 +183,33 @@ Recordings are stored in JSONL format with timestamped entries:
 {"timestamp": "2024-01-15T10:30:46.234567+00:00", "data": {"game_id": "locksmith", "frame": [...], "state": "NOT_FINISHED", "score": 6, "action_input": {"id": "ACTION2", "data": {...}}}}
 ```
 
-## Game Action Semantics
+## Game Actions
+
+All allowable actions:
+* `RESET`
+* `ACTION1`
+* `ACTION2`
+* `ACTION3`
+* `ACTION4`
+* `ACTION5`
+* `ACTION6` `{x: INT<0,63>, y: INT<0,63>}`
 
 Actions 1 through 5 are simple actions that represent a single input into the game. Action 6 is a complex action which requires you to also send an `x, y` game grid coordinate.
 
 Games are allowed to assign semantics to both simple and complex actions however they see fit. For example, a game could assign the following semantics:
-* `ACTION1`: move left
-* `ACTION2`: move right  
-* `ACTION3`: move up
-* `ACTION4`: move down
-* `ACTION5`: use/interact
+* `ACTION1`: move up
+* `ACTION2`: move down
+* `ACTION3`: move left
+* `ACTION4`: move right
+* `ACTION5`: use/interact with current cell
 * `ACTION6`: select cell `x, y`
 
 Discovering and interpreting semantics for each game is intentionally part of the challenge. The ARC-AGI-3 game state never advances without player input.
 
-Every action response contains a `score` with range `INT<0,254>`. Like actions, score is semantic. Each game is free to interpret score as it sees fit. Some games do not use a score at all (and will always be `0`). Other games may only use a partial range. There is no universal score to indicate a game has been won. Therefore it is most useful as a relative indicator.
+Every action response contains a `score` with range `INT<0,254>`. The score represents your level progression in the game. A score of 0 indicates you have yet to beat level 1, while a score of 5 would indicate you've passed level 5 and are on level 6 (if the game has it). Games are free to have as many levels as they wish, but they will always have at least one level.
+
+Every action will result in at least one grid in the frame. However, some games may occasionally return multiples frame grids per action in order to show sequential intermediate game states.
+
+For example, if a player pushes a object in the middle of the grid, a game may return sequential grids showing the object moving one grid cell at a time all the way to the edge of the grid.
+
+Beating a level is indicated by an incrementing of the score by one _and_ a two or more frames being returned in the response.  This is how the human UI on the frontend knows to display the "Firework" animation.
