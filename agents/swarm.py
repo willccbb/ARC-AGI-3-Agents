@@ -5,6 +5,7 @@ import logging
 import os
 from threading import Thread
 from typing import TYPE_CHECKING, Optional, Type
+
 import requests
 
 from .structs import Scorecard

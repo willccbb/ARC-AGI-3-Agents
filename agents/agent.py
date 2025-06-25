@@ -1,11 +1,10 @@
 import json
 import logging
 import os
-import random
-import textwrap
 import time
 from abc import ABC, abstractmethod
 from typing import Any, Optional
+
 import requests
 from pydantic import ValidationError
 from requests import Response
@@ -14,6 +13,7 @@ from .recorder import Recorder
 from .structs import FrameData, GameAction, GameState, Scorecard
 
 logger = logging.getLogger()
+
 
 class Agent(ABC):
     """Interface for an agent that plays one ARC-AGI-3 game."""
@@ -177,7 +177,7 @@ class Agent(ABC):
                 logger.info(
                     f"Finishing: agent took {self.action_counter} actions, took {self.seconds} seconds ({self.fps} average fps)"
                 )
-            if hasattr(self, '_session'):
+            if hasattr(self, "_session"):
                 self._session.close()
 
     @abstractmethod
@@ -203,32 +203,35 @@ class Playback(Agent):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.start_recording()
-        if self.agent_name in self.recorder.filenames():
+        self.recorder = Recorder(
+            prefix=Recorder.get_prefix(self.agent_name),
+            guid=Recorder.get_guid(self.agent_name),
+        )
+        if self.agent_name in Recorder.list():
             self.recorded_actions = self.filter_actions()
 
     def filter_actions(self) -> list[dict[str, Any]]:
-        lines = self.recorder.read(self.agent_name)
-        return [line for line in lines if "action" in line]
+        return [
+            a for a in self.recorder.get() if "data" in a and "game_id" in a["data"]
+        ]
 
     def is_done(self, frames: list[FrameData], latest_frame: FrameData) -> bool:
-        return len(frames) - 1 >= len(self.recorded_actions)
+        return bool(self.action_counter >= len(self.recorded_actions))
 
     def choose_action(
         self, frames: list[FrameData], latest_frame: FrameData
     ) -> GameAction:
-        index = len(frames) - 1
-        if index < len(self.recorded_actions):
-            recorded_action = self.recorded_actions[index]
-            action = GameAction.from_action_dict(recorded_action)
-            logger.debug(f"replaying action {index}: {action}")
-            time.sleep(1 / self.PLAYBACK_FPS)
-            return action
-        else:
-            return GameAction.EXIT
+        rec_frame = self.recorded_actions[self.action_counter]["data"]
+        frame = FrameData(**rec_frame)
+        action = frame.action_input.id
+        data = frame.action_input.data
+        data["game_id"] = self.game_id
+        action.set_data(data)
+        time.sleep(1.0 / self.PLAYBACK_FPS)
+        return action
 
     def append_frame(self, frame: FrameData) -> None:
-        # do not record frames when playing back
+        # overwrite append_frame to not double record
         self.frames.append(frame)
         if frame.guid:
             self.guid = frame.guid

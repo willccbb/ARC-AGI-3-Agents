@@ -3,10 +3,10 @@ from typing import Type, cast
 from dotenv import load_dotenv
 
 from .agent import Agent, Playback
-from .templates.random_agent import Random
-from .templates.llm_agents import LLM, FastLLM, ReasoningLLM, GuidedLLM
-from .swarm import Swarm
 from .recorder import Recorder
+from .swarm import Swarm
+from .templates.llm_agents import LLM, FastLLM, GuidedLLM, ReasoningLLM
+from .templates.random_agent import Random
 
 load_dotenv()
 

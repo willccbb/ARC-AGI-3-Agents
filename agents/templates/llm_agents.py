@@ -481,11 +481,11 @@ Call exactly one action.
 # Example of a custom LLM agent
 class CustomLLM(LLM):
     """Template for creating your own custom LLM agent."""
-    
+
     MAX_ACTIONS = 300
     MODEL = "gpt-4o-mini"
     DO_OBSERVATION = True
-    
+
     def build_user_prompt(self, latest_frame: FrameData) -> str:
         """Customize this method to provide game-specific instructions to the LLM."""
         return textwrap.dedent(
@@ -505,4 +505,4 @@ For example, explain the game rules, objectives, and optimal strategies.
 # TURN:
 Call exactly one action.
         """.format()
-        ) 
+        )

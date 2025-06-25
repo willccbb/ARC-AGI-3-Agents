@@ -93,7 +93,7 @@ def main() -> None:
     with requests.Session() as session:
         session.headers.update(HEADERS)
         r = session.get(f"{ROOT_URL}/api/games")
-        
+
     games = [g["game_id"] for g in r.json()]
     if args.game:
         filters = args.game.split(",")

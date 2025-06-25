@@ -1,5 +1,4 @@
 import random
-from typing import Any
 
 from ..agent import Agent
 from ..structs import FrameData, GameAction, GameState
@@ -35,7 +34,7 @@ class Random(Agent):
         else:
             # else choose a random action that isnt reset
             action = random.choice([a for a in GameAction if a is not GameAction.RESET])
-        
+
         if action.is_simple():
             action.set_data({"game_id": self.game_id})
         elif action.is_complex():
@@ -52,13 +51,13 @@ class Random(Agent):
 # Example of a simple custom agent you can build
 class MyCustomAgent(Agent):
     """Template for creating your own custom agent."""
-    
+
     MAX_ACTIONS = 200
-    
+
     def is_done(self, frames: list[FrameData], latest_frame: FrameData) -> bool:
         """Customize this method to define when your agent should stop."""
         return latest_frame.state in [GameState.WIN, GameState.GAME_OVER]
-    
+
     def choose_action(
         self, frames: list[FrameData], latest_frame: FrameData
     ) -> GameAction:
@@ -71,5 +70,5 @@ class MyCustomAgent(Agent):
             # For now, just do ACTION1 as an example
             action = GameAction.ACTION1
             action.set_data({"game_id": self.game_id})
-        
-        return action 
+
+        return action
