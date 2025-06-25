@@ -75,11 +75,11 @@ class Scorecard(BaseModel):
 
     @computed_field(return_type=int)
     def won(self) -> int:
-        return sum(GameState.WIN in g.states for g in self.cards.values())
+        return sum(1 for g in self.cards.values() if GameState.WIN in g.states)
 
     @computed_field(return_type=int)
     def played(self) -> int:
-        return sum(bool(g.states) for g in self.cards.values())
+        return sum(1 for g in self.cards.values() if g.states)
 
     @computed_field(return_type=int)
     def total_actions(self) -> int:

@@ -28,6 +28,10 @@ The above command will play one specific game. You can also play all games like 
 uv run main.py --agent=random
 ```
 
+## Agent Templates and Quickstart
+
+For easy-to-use starting points and examples, check out the [Agent Templates](templates/README.md) which provide ready-to-use agent classes and customizable examples.
+
 ## Agent API Reference
 
 ### Creating a Custom Agent
@@ -36,7 +40,7 @@ To create a custom agent, inherit from the `Agent` base class and implement the 
 
 ```python
 from agents.agent import Agent
-from agents.structs import FrameData, GameAction
+from agents.structs import FrameData, GameAction, GameState
 
 class YourAgent(Agent):
     def is_done(self, frames: list[FrameData], latest_frame: FrameData) -> bool:

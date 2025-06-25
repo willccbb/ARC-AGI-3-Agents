@@ -24,6 +24,10 @@ SCHEME = os.environ.get("SCHEME", "http")
 HOST = os.environ.get("HOST", "localhost")
 PORT = os.environ.get("PORT", 8001)
 ROOT_URL = f"{SCHEME}://{HOST}:{PORT}/"
+HEADERS = {
+    "X-API-Key": os.getenv("ARC_API_KEY", ""),
+    "Accept": "application/json",
+}
 
 
 def run_agent(swarm: Swarm) -> None:
@@ -86,14 +90,10 @@ def main() -> None:
     print(f"{ROOT_URL}/api/games")
 
     # Get the list of games from the API
-    headers = {
-        "X-API-Key": os.getenv("ARC_API_KEY", ""),
-        "Accept": "application/json",
-    }
-    r = requests.get(
-        f"{ROOT_URL}/api/games",
-        headers=headers,
-    )
+    with requests.Session() as session:
+        session.headers.update(HEADERS)
+        r = session.get(f"{ROOT_URL}/api/games")
+        
     games = [g["game_id"] for g in r.json()]
     if args.game:
         filters = args.game.split(",")

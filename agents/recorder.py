@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 RECORDING_SUFFIX = ".recording.jsonl"
+_RECORDINGS_DIR = os.environ.get("RECORDINGS_DIR", "")
 
 
 class Recorder:
@@ -14,14 +15,16 @@ class Recorder:
         self.guid = self.get_guid(filename) if filename else (guid or str(uuid.uuid4()))
         self.prefix: str = prefix
         self.filename = (
-            os.path.join(os.environ.get("RECORDINGS_DIR", ""), filename)
+            os.path.join(_RECORDINGS_DIR, filename)
             if filename
             else os.path.join(
-                os.environ.get("RECORDINGS_DIR", ""),
+                _RECORDINGS_DIR,
                 f"{self.prefix}.{self.guid}{RECORDING_SUFFIX}",
             )
         )
-        os.makedirs(os.environ.get("RECORDINGS_DIR", ""), exist_ok=True)
+        # Create directory once during initialization
+        if _RECORDINGS_DIR:
+            os.makedirs(_RECORDINGS_DIR, exist_ok=True)
 
     def record(self, data: dict[str, Any]) -> None:
         """
@@ -56,8 +59,11 @@ class Recorder:
 
     @classmethod
     def list(cls) -> list[str]:
-        os.makedirs(os.environ.get("RECORDINGS_DIR", ""), exist_ok=True)
-        filenames = os.listdir(os.environ.get("RECORDINGS_DIR", ""))
+        if _RECORDINGS_DIR:
+            os.makedirs(_RECORDINGS_DIR, exist_ok=True)
+            filenames = os.listdir(_RECORDINGS_DIR)
+        else:
+            filenames = []
         return [f for f in filenames if f.endswith(RECORDING_SUFFIX)]
 
     @classmethod
