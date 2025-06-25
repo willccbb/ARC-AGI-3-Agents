@@ -126,7 +126,7 @@ class GameAction(Enum):
     ACTION6 = (6, ComplexAction)
 
     action_type: Union[Type[SimpleAction], Type[ComplexAction]]
-    action_data: Union[SimpleAction | ComplexAction]
+    action_data: Union[SimpleAction, ComplexAction]
 
     def __init__(
         self,
@@ -148,7 +148,7 @@ class GameAction(Enum):
         self.action_type.model_validate(data)
         return True
 
-    def set_data(self, data: dict[str, Any]) -> Union[SimpleAction | ComplexAction]:
+    def set_data(self, data: dict[str, Any]) -> Union[SimpleAction, ComplexAction]:
         self.action_data = self.action_type(**data)
         return self.action_data
 

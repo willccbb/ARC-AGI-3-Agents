@@ -1,0 +1,20 @@
+# ARC-AGI-3 Agents
+
+ARC-AGI-3-Agents is a framework for building AI agents that play ARC-AGI-3 games. These games are novel, fun, ARC-like puzzles that require only Core Knowledge to win and follow a dynamic format (unlike static input/output pairs from ARC-AGI-1 and ARC-AGI-2). More information can be found on the main website: https://arcprize.org/
+
+## Project Structure
+
+```
+ARC-AGI-3-Agents/
+├── agents/                   # Core agent system
+│   ├── __init__.py           # Available agents registry
+│   ├── agent.py              # Base Agent class and implementations
+│   ├── recorder.py           # Game recording functionality
+│   ├── structs.py            # Data structures (FrameData, GameAction, etc.)
+│   ├── swarm.py              # Multi-agent orchestration
+│   └── README.md             # Agent documentation
+├── main.py                   # Entry point for running agents
+├── pyproject.toml            # Project dependencies and configuration
+├── recordings/               # Auto-generated gameplay recordings
+└── README.md                 # Main project documentation
+```

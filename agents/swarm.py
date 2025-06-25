@@ -1,0 +1,119 @@
+from __future__ import annotations
+
+import json
+import logging
+import os
+from threading import Thread
+from typing import TYPE_CHECKING, Optional, Type
+import requests
+
+from .structs import Scorecard
+
+if TYPE_CHECKING:
+    from .agent import Agent
+
+logger = logging.getLogger()
+
+
+class Swarm:
+    """Orchestration for many agents playing many ARC-AGI-3 games."""
+
+    GAMES: list[str]
+    ROOT_URL: str
+    COUNT: int
+    agent_name: str
+    agent_class: Type[Agent]
+    threads: list[Thread]
+    agents: list[Agent]
+    record_games: list[str]
+    cleanup_threads: list[Thread]
+    headers: dict[str, str]
+    card_id: Optional[str]
+
+    def __init__(
+        self,
+        agent: str,
+        ROOT_URL: str,
+        games: list[str],
+    ) -> None:
+        from . import AVAILABLE_AGENTS
+
+        self.GAMES = games
+        self.ROOT_URL = ROOT_URL
+        self.agent_name = agent
+        self.agent_class = AVAILABLE_AGENTS[agent]
+        self.threads = []
+        self.agents = []
+        self.cleanup_threads = []
+        self.headers = {
+            "X-API-Key": os.getenv("ARC_API_KEY", ""),
+            "Accept": "application/json",
+        }
+
+    def main(self) -> Scorecard:
+        """The main orchestration loop, continues until all agents are done."""
+
+        # submit start of scorecard
+        self.card_id = self.open_scorecard()
+
+        # create all the agents
+        for i in range(len(self.GAMES)):
+            g = self.GAMES[i % len(self.GAMES)]
+            a = self.agent_class(
+                card_id=self.card_id,
+                game_id=g,
+                agent_name=self.agent_name,
+                ROOT_URL=self.ROOT_URL,
+                record=True,
+            )
+            self.agents.append(a)
+
+        # create all the threads
+        for a in self.agents:
+            self.threads.append(Thread(target=a.main, daemon=True))
+
+        # start all the threads
+        for t in self.threads:
+            t.start()
+
+        # wait for all agent to finish
+        for t in self.threads:
+            t.join()
+
+        # all agents are now done
+        scorecard = self.close_scorecard(self.card_id)
+        logger.info("--- FINAL SCORECARD REPORT ---")
+        logger.info(json.dumps(scorecard.model_dump(), indent=2))
+
+        self.cleanup(scorecard)
+
+        return scorecard
+
+    def open_scorecard(self) -> str:
+        json_str = json.dumps({"tags": ["agent", self.agent_name]})
+
+        r = requests.post(
+            f"{self.ROOT_URL}/api/scorecard/open",
+            json=json.loads(json_str),
+            headers=self.headers,
+        )
+        if "error" in r.json():
+            logger.warning(f"Exception during open scorecard: {r.json()}")
+        return str(r.json()["card_id"])
+
+    def close_scorecard(self, card_id: str) -> Scorecard:
+        self.card_id = None
+        json_str = json.dumps({"card_id": card_id})
+        r = requests.post(
+            f"{self.ROOT_URL}/api/scorecard/close",
+            json=json.loads(json_str),
+            headers=self.headers,
+        )
+        if "error" in r.json():
+            logger.warning(f"Exception during open scorecard: {r.json()}")
+        return Scorecard.model_validate(r.json())
+
+    def cleanup(self, scorecard: Optional[Scorecard] = None) -> None:
+        """Cleanup all agents."""
+        for a in self.agents:
+            a.cleanup(scorecard) 
