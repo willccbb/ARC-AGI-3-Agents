@@ -6,6 +6,7 @@ import textwrap
 import time
 from abc import ABC, abstractmethod
 from typing import Any, Optional
+
 import requests
 from pydantic import ValidationError
 from requests import Response
@@ -14,6 +15,7 @@ from .recorder import Recorder
 from .structs import FrameData, GameAction, GameState, Scorecard
 
 logger = logging.getLogger()
+
 
 class Agent(ABC):
     """Interface for an agent that plays one ARC-AGI-3 game."""
@@ -119,6 +121,8 @@ class Agent(ABC):
             data["card_id"] = self.card_id
         if self.guid:
             data["guid"] = self.guid
+        if action.reasoning:
+            data["reasoning"] = action.reasoning
 
         json_str = json.dumps(data)
         r = requests.post(
@@ -261,6 +265,7 @@ class Random(Agent):
             action = random.choice([a for a in GameAction if a is not GameAction.RESET])
         if action.is_simple():
             action.set_data({"game_id": self.game_id})
+            action.reasoning = f"RNG told me to pick {action.value}"
         elif action.is_complex():
             action.set_data(
                 {
@@ -269,6 +274,10 @@ class Random(Agent):
                     "y": random.randint(0, 63),
                 }
             )
+            action.reasoning = {
+                "desired_action": f"{action.value}",
+                "my_reason": "RNG said so!",
+            }
         return action
 
 

@@ -5,6 +5,7 @@ import logging
 import os
 from threading import Thread
 from typing import TYPE_CHECKING, Optional, Type
+
 import requests
 
 from .structs import Scorecard
@@ -116,4 +117,4 @@ class Swarm:
     def cleanup(self, scorecard: Optional[Scorecard] = None) -> None:
         """Cleanup all agents."""
         for a in self.agents:
-            a.cleanup(scorecard) 
+            a.cleanup(scorecard)
