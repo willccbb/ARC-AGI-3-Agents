@@ -65,6 +65,48 @@ This directory contains template files to help developers quickly build custom a
 3. **Register and run:**
    Same as above, but use your LLM agent class.
 
+### Building a Reasoning LLM Agent
+
+1. **Set up OpenAI API:**
+   ```bash
+   # Add to your .env file
+   OPENAI_SECRET_KEY=your_api_key_here
+   ```
+
+2. **Use the ReasoningLLM template (o4-mini):**
+   ```python
+   from agents.templates.llm_agents import ReasoningLLM
+   
+   class MyReasoningAgent(ReasoningLLM):
+       # Uses o4-mini by default
+       MAX_ACTIONS = 50
+       
+       def build_user_prompt(self, latest_frame):
+           return "Complex reasoning task instructions..."
+   ```
+
+3. **Register and run:**
+   Same as above, but use your ReasoningLLM agent class.
+
+Example reasoning field content: (this is the reasoning field in the API response)
+   
+   ```json
+   {
+     "model": "o4-mini",
+     "action_chosen": "ACTION2",
+     "reasoning_tokens_last_response": 150,
+     "total_reasoning_tokens_session": 850,
+     "game_context": {
+       "score": 3,
+       "state": "NOT_FINISHED",
+       "action_counter": 15
+     },
+     "decision_summary": "Selected ACTION2 based on o4-mini reasoning"
+   }
+   ```
+
+The reasoning field is opaque and supports any valid JSON.
+
 ## Agent Class Methods
 
 ### Required Methods to Override

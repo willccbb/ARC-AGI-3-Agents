@@ -4,15 +4,15 @@ This directory contains the agent system for ARC-AGI-3, including the base agent
 
 ## AI Play Testing
 
-AI interacts with games via a JSON-based REST API by sending actions and receiving game grids to `WIN` (and avoid `GAME_OVER`). Each game grid is 2D with a maximum dimension of `INT<0,63>, INT<0,63>`. Each grid is made up of grid cells represented by `INT<0,15>`. A sequence of grids makes a frame. Every game uses the same universal set of actions (documented below). However, action semantics are game specific.
+Agents interact with games via a JSON-based REST API by sending actions through the API and receiving game grids. Their goal is to `WIN` and avoid `GAME_OVER`. Each game grid is 2D with a maximum dimension of `(INT<0,63>, INT<0,63>)`. Each grid is made up of grid cells represented by `INT<0,15>` (each grid cell has 16 different possible states). A sequence of grids makes a frame. Every game uses the same universal set of actions (documented below). However, action semantics are game specific.
 
 There are several default AI agents in the respository you can begin to experiment with! Here is a list of included agents:
 
 * `random` - Selects actions randomly
-* `llm` - Uses OpenAI models for decision making
-* `fastllm` - Similar to LLM but skips observations for faster execution
-* `guidedllm` - LLM with explicit human-provided rules to increase success rate
-* `rlagent` - Reinforcement learning agent (work in progress)
+* `llm` - Basic LLM agent using OpenAI models for decision making
+* `reasoningllm` - LLM agent that uses o4-mini and captures reasoning metadata.
+* `fastllm` - Similar to the LLM agent but skips observations for faster execution
+* `guidedllm` - LLM agent with explicit human-provided rules (for a specific game) to increase success rate on that game
 
 Note: LLM agents use OpenAI models, place your OpenAI API key in `.env`
 
@@ -171,7 +171,7 @@ The ARC-AGI-3 agent system includes recording and playback functionality for ana
 
 All agent gameplay is automatically recorded by default and stored in the `recordings/` directory with GUID-based filenames like:
 ```
-locksmith.random.100.a1b2c3d4-e5f6-7890-abcd-ef1234567890.recording.jsonl
+locksmith-6cbb1acf0530.random.100.a1b2c3d4-e5f6-7890-abcd-ef1234567890.recording.jsonl
 ```
 
 The filename format is: `{game_id}.{agent_type}.{max_actions}.{guid}.recording.jsonl`
@@ -183,8 +183,25 @@ You will be able to view these recordings in the Arc UI.
 Recordings are stored in JSONL format with timestamped entries:
 
 ```json
-{"timestamp": "2024-01-15T10:30:45.123456+00:00", "data": {"game_id": "locksmith", "frame": [...], "state": "NOT_FINISHED", "score": 5, "action_input": {"id": "ACTION1", "data": {...}}}}
-{"timestamp": "2024-01-15T10:30:46.234567+00:00", "data": {"game_id": "locksmith", "frame": [...], "state": "NOT_FINISHED", "score": 6, "action_input": {"id": "ACTION2", "data": {...}}}}
+{"timestamp": "2024-01-15T10:30:45.123456+00:00", "data": {"game_id": "locksmith", "frame": [...], "state": "NOT_FINISHED", "score": 5, "action_input": {"id": 0, "data": {"game_id": "locksmith"}, "reasoning": "..."}, "guid": "...", "full_reset": false}}
+{"timestamp": "2024-01-15T10:30:46.234567+00:00", "data": {"game_id": "locksmith", "frame": [...], "state": "NOT_FINISHED", "score": 6, "action_input": {"id": 1, "data": {"game_id": "locksmith"}, "reasoning": "..."}, "guid": "...", "full_reset": false}}
+```
+
+### Playback Functionality
+
+The system includes a Playback agent that can replay previously recorded sessions.
+
+#### Running Playback
+
+To replay a recorded session, use the recording filename as the agent name:
+
+```bash
+uv run main.py --agent="game.agent.100.guid.recording.jsonl" --game=game
+```
+
+Example:
+```bash
+uv run main.py --agent="locksmith-6cbb1acf0530.random.100.ee8571b9-0210-4ec4-8cfe-1a194f32e154.recording.jsonl" --game=locksmith
 ```
 
 ## Game Actions
@@ -216,4 +233,4 @@ Every action will result in at least one grid in the frame. However, some games 
 
 For example, if a player pushes a object in the middle of the grid, a game may return sequential grids showing the object moving one grid cell at a time all the way to the edge of the grid.
 
-Beating a level is indicated by an incrementing of the score by one _and_ a two or more frames being returned in the response.  This is how the human UI on the frontend knows to display the "Firework" animation.
+Beating a level is indicated by an incrementing of the score by one _and_ two or more frames being returned in the response.
