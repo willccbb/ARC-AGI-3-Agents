@@ -30,6 +30,7 @@ class Swarm:
     cleanup_threads: list[Thread]
     headers: dict[str, str]
     card_id: Optional[str]
+    _session: requests.Session
 
     def __init__(
         self,
@@ -50,6 +51,8 @@ class Swarm:
             "X-API-Key": os.getenv("ARC_API_KEY", ""),
             "Accept": "application/json",
         }
+        self._session = requests.Session()
+        self._session.headers.update(self.headers)
 
     def main(self) -> Scorecard:
         """The main orchestration loop, continues until all agents are done."""
@@ -93,7 +96,7 @@ class Swarm:
     def open_scorecard(self) -> str:
         json_str = json.dumps({"tags": ["agent", self.agent_name]})
 
-        r = requests.post(
+        r = self._session.post(
             f"{self.ROOT_URL}/api/scorecard/open",
             json=json.loads(json_str),
             headers=self.headers,
@@ -105,7 +108,7 @@ class Swarm:
     def close_scorecard(self, card_id: str) -> Scorecard:
         self.card_id = None
         json_str = json.dumps({"card_id": card_id})
-        r = requests.post(
+        r = self._session.post(
             f"{self.ROOT_URL}/api/scorecard/close",
             json=json.loads(json_str),
             headers=self.headers,
@@ -118,3 +121,5 @@ class Swarm:
         """Cleanup all agents."""
         for a in self.agents:
             a.cleanup(scorecard)
+        if hasattr(self, "_session"):
+            self._session.close()

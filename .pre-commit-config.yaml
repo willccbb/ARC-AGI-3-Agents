@@ -11,5 +11,5 @@ repos:
   rev: 'v1.15.0'
   hooks:
     - id: mypy
-      additional_dependencies: [types-requests==2.31.0,pydantic==2.11.3,arcengine @ git+ssh://git@github.com/arcprize/ARCEngine.git@main]
+      additional_dependencies: [types-requests==2.31.0,pydantic==2.11.3]
       exclude: "tests"

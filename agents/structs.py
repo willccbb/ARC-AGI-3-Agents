@@ -140,6 +140,7 @@ class GameAction(Enum):
         self._value_ = action_id
         self.action_type = action_type
         self.action_data = action_type()
+        self.reasoning = None
 
     def is_simple(self) -> bool:
         return self.action_type is SimpleAction

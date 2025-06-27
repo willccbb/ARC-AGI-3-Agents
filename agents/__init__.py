@@ -2,9 +2,11 @@ from typing import Type, cast
 
 from dotenv import load_dotenv
 
-from .agent import LLM, Agent, Playback, Random
+from .agent import Agent, Playback
 from .recorder import Recorder
 from .swarm import Swarm
+from .templates.llm_agents import LLM, FastLLM, GuidedLLM, ReasoningLLM
+from .templates.random_agent import Random
 
 load_dotenv()
 
@@ -22,6 +24,9 @@ __all__ = [
     "Swarm",
     "Random",
     "LLM",
+    "FastLLM",
+    "ReasoningLLM",
+    "GuidedLLM",
     "Agent",
     "Recorder",
     "Playback",
