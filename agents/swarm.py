@@ -85,9 +85,17 @@ class Swarm:
             t.join()
 
         # all agents are now done
+        card_id_for_url = self.card_id
         scorecard = self.close_scorecard(self.card_id)
         logger.info("--- FINAL SCORECARD REPORT ---")
         logger.info(json.dumps(scorecard.model_dump(), indent=2))
+
+        # Provide web link to scorecard
+        if card_id_for_url:
+            scorecard_url = (
+                f"https://sandbox.internal.arc-prize.com/scorecards/{card_id_for_url}"
+            )
+            logger.info(f"View your scorecard online: {scorecard_url}")
 
         self.cleanup(scorecard)
 

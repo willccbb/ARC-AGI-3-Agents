@@ -9,7 +9,7 @@ from ..structs import FrameData, GameAction, GameState
 class Random(Agent):
     """An agent that always selects actions at random."""
 
-    MAX_ACTIONS = 100
+    MAX_ACTIONS = 80
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)

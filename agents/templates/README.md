@@ -14,7 +14,7 @@ This directory contains template files to help developers quickly build custom a
 2. **Customize your agent:**
    ```python
    class MyAgent(Agent):
-       MAX_ACTIONS = 100
+       MAX_ACTIONS = 80
        
        def is_done(self, frames, latest_frame):
            # Define when your agent should stop
@@ -55,7 +55,7 @@ This directory contains template files to help developers quickly build custom a
    
    class MyLLMAgent(LLM):
        MODEL = "gpt-4o-mini"
-       MAX_ACTIONS = 200
+       MAX_ACTIONS = 80
        
        def build_user_prompt(self, latest_frame):
            # Customize the prompt for your specific game
@@ -79,7 +79,7 @@ This directory contains template files to help developers quickly build custom a
    
    class MyReasoningAgent(ReasoningLLM):
        # Uses o4-mini by default
-       MAX_ACTIONS = 50
+       MAX_ACTIONS = 80
        
        def build_user_prompt(self, latest_frame):
            return "Complex reasoning task instructions..."

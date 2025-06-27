@@ -88,7 +88,7 @@ The `Agent` class provides the following key features:
 - `fps: float` - Actions per second performance metric
 
 #### Configuration
-- `MAX_ACTIONS: int = 100` - Maximum actions before auto-termination
+- `MAX_ACTIONS: int = 80` - Maximum actions before auto-termination
 - `card_id: str` - Scorecard ID for tracking performance
 - `game_id: str` - The specific game being played
 - `guid: str` - Unique identifier for this game session
@@ -151,7 +151,7 @@ To add new agent types:
 Example:
 ```python
 class MyCustomAgent(Agent):
-    MAX_ACTIONS = 500
+    MAX_ACTIONS = 80
     CUSTOM_PARAM = "value"
     
     def is_done(self, frames, latest_frame):
@@ -203,6 +203,8 @@ Example:
 ```bash
 uv run main.py --agent="locksmith-6cbb1acf0530.random.100.ee8571b9-0210-4ec4-8cfe-1a194f32e154.recording.jsonl" --game=locksmith
 ```
+
+After running an agent, you can view the visual replay of the gameplay session on the ARC-AGI-3 website.
 
 ## Game Actions
 

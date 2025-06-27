@@ -18,7 +18,7 @@ logger = logging.getLogger()
 class Agent(ABC):
     """Interface for an agent that plays one ARC-AGI-3 game."""
 
-    MAX_ACTIONS: int = 100  # to avoid looping forever if agent doesnt exit
+    MAX_ACTIONS: int = 80  # to avoid looping forever if agent doesnt exit
     ROOT_URL: str
 
     action_counter: int = 0
@@ -66,9 +66,6 @@ class Agent(ABC):
             not self.is_done(self.frames, self.frames[-1])
             and self.action_counter <= self.MAX_ACTIONS
         ):
-            # For playback agents
-            loop_start_time = time.time() if self.is_playback else None
-
             action = self.choose_action(self.frames, self.frames[-1])
             if frame := self.take_action(action):
                 self.append_frame(frame)
@@ -76,14 +73,6 @@ class Agent(ABC):
                     f"{self.game_id} - {action.name}: count {self.action_counter}, score {frame.score}, avg fps {self.fps})"
                 )
             self.action_counter += 1
-
-            # For playback agents having consistent FPS
-            if self.is_playback and loop_start_time is not None:
-                target_frame_time = 1.0 / getattr(self, "PLAYBACK_FPS", 5)
-                elapsed_time = time.time() - loop_start_time
-                sleep_time = max(0, target_frame_time - elapsed_time)
-                if sleep_time > 0:
-                    time.sleep(sleep_time)
 
         self.cleanup()
 
@@ -249,6 +238,9 @@ class Playback(Agent):
     def choose_action(
         self, frames: list[FrameData], latest_frame: FrameData
     ) -> GameAction:
+        # FPS control for playback
+        loop_start_time = time.time()
+
         if self.action_counter >= len(self.recorded_actions):
             logger.warning(
                 f"No more recorded actions available (counter: {self.action_counter}, total: {len(self.recorded_actions)})"
@@ -268,6 +260,13 @@ class Playback(Agent):
         logger.debug(
             f"Playback action {self.action_counter}: {action.name} with data {data}"
         )
+
+        # Control FPS for consistent playback speed
+        target_frame_time = 1.0 / getattr(self, "PLAYBACK_FPS", 5)
+        elapsed_time = time.time() - loop_start_time
+        sleep_time = max(0, target_frame_time - elapsed_time)
+        if sleep_time > 0:
+            time.sleep(sleep_time)
 
         return action
 
