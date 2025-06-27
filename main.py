@@ -23,7 +23,7 @@ logger = logging.getLogger()
 SCHEME = os.environ.get("SCHEME", "http")
 HOST = os.environ.get("HOST", "localhost")
 PORT = os.environ.get("PORT", 8001)
-ROOT_URL = f"{SCHEME}://{HOST}:{PORT}/"
+ROOT_URL = f"{SCHEME}://{HOST}:{PORT}"
 HEADERS = {
     "X-API-Key": os.getenv("ARC_API_KEY", ""),
     "Accept": "application/json",
@@ -90,18 +90,48 @@ def main() -> None:
     print(f"{ROOT_URL}/api/games")
 
     # Get the list of games from the API
-    with requests.Session() as session:
-        session.headers.update(HEADERS)
-        r = session.get(f"{ROOT_URL}/api/games")
+    games = []
+    try:
+        with requests.Session() as session:
+            session.headers.update(HEADERS)
+            r = session.get(f"{ROOT_URL}/api/games", timeout=10)
 
-    games = [g["game_id"] for g in r.json()]
+        if r.status_code == 200:
+            try:
+                games = [g["game_id"] for g in r.json()]
+            except (ValueError, KeyError) as e:
+                logger.error(f"Failed to parse games response: {e}")
+                logger.error(f"Response content: {r.text[:200]}")
+        else:
+            logger.error(
+                f"API request failed with status {r.status_code}: {r.text[:200]}"
+            )
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to connect to API server: {e}")
+
+    # For playback agents, we can derive the game from the recording filename
+    if not games and args.agent and args.agent.endswith(".recording.jsonl"):
+        from agents.recorder import Recorder
+
+        game_prefix = Recorder.get_prefix_one(args.agent)
+        games = [game_prefix]
+        logger.info(
+            f"Using game '{game_prefix}' derived from playback recording filename"
+        )
     if args.game:
         filters = args.game.split(",")
         games = [
             gid for gid in games if any(gid.startswith(prefix) for prefix in filters)
         ]
 
-    logger.info(f"Game list returned from API: {games}")
+    logger.info(f"Game list: {games}")
+
+    if not games:
+        logger.error(
+            "No games available to play. Check API connection or recording file."
+        )
+        return
 
     swarm = Swarm(
         args.agent,

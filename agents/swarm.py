@@ -85,16 +85,32 @@ class Swarm:
             t.join()
 
         # all agents are now done
+        card_id_for_url = self.card_id
         scorecard = self.close_scorecard(self.card_id)
         logger.info("--- FINAL SCORECARD REPORT ---")
         logger.info(json.dumps(scorecard.model_dump(), indent=2))
+
+        # Provide web link to scorecard
+        if card_id_for_url:
+            scorecard_url = f"{self.ROOT_URL}/scorecards/{card_id_for_url}"
+            logger.info(f"View your scorecard online: {scorecard_url}")
 
         self.cleanup(scorecard)
 
         return scorecard
 
     def open_scorecard(self) -> str:
-        json_str = json.dumps({"tags": ["agent", self.agent_name]})
+        # Check if this is a playback agent and set appropriate tags
+        if self.agent_name.endswith(".recording.jsonl"):
+            # Extract GUID from playback filename
+            # Format: game.agent.count.guid.recording.jsonl
+            parts = self.agent_name.split(".")
+            guid = parts[-3] if len(parts) >= 4 else "unknown"
+            tags = ["agent", "playback", guid]
+        else:
+            tags = ["agent", self.agent_name]
+
+        json_str = json.dumps({"tags": tags})
 
         r = self._session.post(
             f"{self.ROOT_URL}/api/scorecard/open",

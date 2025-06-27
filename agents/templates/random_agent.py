@@ -9,7 +9,7 @@ from ..structs import FrameData, GameAction, GameState
 class Random(Agent):
     """An agent that always selects actions at random."""
 
-    MAX_ACTIONS = 100
+    MAX_ACTIONS = 80
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -57,30 +57,4 @@ class Random(Agent):
                 "desired_action": f"{action.value}",
                 "my_reason": "RNG said so!",
             }
-        return action
-
-
-# Example of a simple custom agent you can build
-class MyCustomAgent(Agent):
-    """Template for creating your own custom agent."""
-
-    MAX_ACTIONS = 200
-
-    def is_done(self, frames: list[FrameData], latest_frame: FrameData) -> bool:
-        """Customize this method to define when your agent should stop."""
-        return latest_frame.state in [GameState.WIN, GameState.GAME_OVER]
-
-    def choose_action(
-        self, frames: list[FrameData], latest_frame: FrameData
-    ) -> GameAction:
-        """Customize this method to implement your agent's decision logic."""
-        if latest_frame.state in [GameState.NOT_PLAYED, GameState.GAME_OVER]:
-            action = GameAction.RESET
-            action.set_data({"game_id": self.game_id})
-        else:
-            # Add your custom logic here
-            # For now, just do ACTION1 as an example
-            action = GameAction.ACTION1
-            action.set_data({"game_id": self.game_id})
-
         return action

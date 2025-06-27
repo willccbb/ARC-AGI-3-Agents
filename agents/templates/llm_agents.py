@@ -13,7 +13,7 @@ logger = logging.getLogger()
 class LLM(Agent):
     """An agent that uses a base LLM model to play games."""
 
-    MAX_ACTIONS: int = 1000
+    MAX_ACTIONS: int = 80
     DO_OBSERVATION: bool = True
     REASONING_EFFORT: Optional[str] = None
     MODEL_REQUIRES_TOOLS: bool = False
@@ -395,19 +395,78 @@ Call exactly one action.
 
 
 class ReasoningLLM(LLM, Agent):
-    """For LLMs with reasoning modes."""
+    """An LLM agent that uses o4-mini and captures reasoning metadata in the action.reasoning field."""
 
-    MAX_ACTIONS = 50
+    MAX_ACTIONS = 80
     DO_OBSERVATION = True
     MODEL_REQUIRES_TOOLS = True
-    REASONING_EFFORT = "high"
-    MODEL = "o3"
+    MODEL = "o4-mini"
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._last_reasoning_tokens = 0
+        self._last_response_content = ""
+        self._total_reasoning_tokens = 0
+
+    def choose_action(
+        self, frames: list[FrameData], latest_frame: FrameData
+    ) -> GameAction:
+        """Override choose_action to capture and store reasoning metadata."""
+
+        action = super().choose_action(frames, latest_frame)
+
+        # Store reasoning metadata in the action.reasoning field
+        action.reasoning = {
+            "model": self.MODEL,
+            "action_chosen": action.name,
+            "reasoning_tokens": self._last_reasoning_tokens,
+            "total_reasoning_tokens": self._total_reasoning_tokens,
+            "game_context": {
+                "score": latest_frame.score,
+                "state": latest_frame.state.name,
+                "action_counter": self.action_counter,
+                "frame_count": len(frames),
+            },
+            "response_preview": self._last_response_content[:200] + "..."
+            if len(self._last_response_content) > 200
+            else self._last_response_content,
+        }
+
+        return action
+
+    def track_tokens(self, tokens: int, message: str = "") -> None:
+        """Override to capture reasoning token information from reasoning models."""
+        super().track_tokens(tokens, message)
+
+        # Store the response content for reasoning context (avoid empty or JSON strings)
+        if message and not message.startswith("{"):
+            self._last_response_content = message
+        self._last_reasoning_tokens = tokens
+        self._total_reasoning_tokens += tokens
+
+    def capture_reasoning_from_response(self, response: Any) -> None:
+        """Helper method to capture reasoning tokens from OpenAI API response.
+
+        This should be called from the parent class if we have access to the raw response.
+        For reasoning models, reasoning tokens are in response.usage.completion_tokens_details.reasoning_tokens
+        """
+        if hasattr(response, "usage") and hasattr(
+            response.usage, "completion_tokens_details"
+        ):
+            if hasattr(response.usage.completion_tokens_details, "reasoning_tokens"):
+                self._last_reasoning_tokens = (
+                    response.usage.completion_tokens_details.reasoning_tokens
+                )
+                self._total_reasoning_tokens += self._last_reasoning_tokens
+                logger.debug(
+                    f"Captured {self._last_reasoning_tokens} reasoning tokens from o1 response"
+                )
 
 
 class FastLLM(LLM, Agent):
     """Similar to LLM, but skips observations."""
 
-    MAX_ACTIONS = 100
+    MAX_ACTIONS = 80
     DO_OBSERVATION = False
     MODEL = "gpt-4o-mini"
 
@@ -431,12 +490,75 @@ Call exactly one action.
 class GuidedLLM(LLM, Agent):
     """Similar to LLM, with explicit human-provided rules in the user prompt to increase success rate."""
 
-    MAX_ACTIONS = 200
+    MAX_ACTIONS = 80
     DO_OBSERVATION = True
     MODEL = "o3"
     MODEL_REQUIRES_TOOLS = True
     MESSAGE_LIMIT = 10
     REASONING_EFFORT = "high"
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._last_reasoning_tokens = 0
+        self._last_response_content = ""
+        self._total_reasoning_tokens = 0
+
+    def choose_action(
+        self, frames: list[FrameData], latest_frame: FrameData
+    ) -> GameAction:
+        """Override choose_action to capture and store reasoning metadata."""
+
+        action = super().choose_action(frames, latest_frame)
+
+        # Store reasoning metadata in the action.reasoning field
+        action.reasoning = {
+            "model": self.MODEL,
+            "action_chosen": action.name,
+            "reasoning_effort": self.REASONING_EFFORT,
+            "reasoning_tokens": self._last_reasoning_tokens,
+            "total_reasoning_tokens": self._total_reasoning_tokens,
+            "game_context": {
+                "score": latest_frame.score,
+                "state": latest_frame.state.name,
+                "action_counter": self.action_counter,
+                "frame_count": len(frames),
+            },
+            "agent_type": "guided_llm",
+            "game_rules": "locksmith",
+            "response_preview": self._last_response_content[:200] + "..."
+            if len(self._last_response_content) > 200
+            else self._last_response_content,
+        }
+
+        return action
+
+    def track_tokens(self, tokens: int, message: str = "") -> None:
+        """Override to capture reasoning token information from o3 models."""
+        super().track_tokens(tokens, message)
+
+        # Store the response content for reasoning context (avoid empty or JSON strings)
+        if message and not message.startswith("{"):
+            self._last_response_content = message
+        self._last_reasoning_tokens = tokens
+        self._total_reasoning_tokens += tokens
+
+    def capture_reasoning_from_response(self, response: Any) -> None:
+        """Helper method to capture reasoning tokens from OpenAI API response.
+
+        This should be called from the parent class if we have access to the raw response.
+        For o3 models, reasoning tokens are in response.usage.completion_tokens_details.reasoning_tokens
+        """
+        if hasattr(response, "usage") and hasattr(
+            response.usage, "completion_tokens_details"
+        ):
+            if hasattr(response.usage.completion_tokens_details, "reasoning_tokens"):
+                self._last_reasoning_tokens = (
+                    response.usage.completion_tokens_details.reasoning_tokens
+                )
+                self._total_reasoning_tokens += self._last_reasoning_tokens
+                logger.debug(
+                    f"Captured {self._last_reasoning_tokens} reasoning tokens from o3 response"
+                )
 
     def build_user_prompt(self, latest_frame: FrameData) -> str:
         return textwrap.dedent(
@@ -479,15 +601,15 @@ Call exactly one action.
 
 
 # Example of a custom LLM agent
-class CustomLLM(LLM):
+class MyCustomLLM(LLM):
     """Template for creating your own custom LLM agent."""
 
-    MAX_ACTIONS = 300
+    MAX_ACTIONS = 80
     MODEL = "gpt-4o-mini"
     DO_OBSERVATION = True
 
     def build_user_prompt(self, latest_frame: FrameData) -> str:
-        """Customize this method to provide game-specific instructions to the LLM."""
+        """Customize this method to provide instructions to the LLM."""
         return textwrap.dedent(
             """
 # CONTEXT:
@@ -499,7 +621,7 @@ Grids. Each Grid is a matrix size INT<0,63> by INT<0,63> filled with
 INT<0,15> values.
 
 # CUSTOM INSTRUCTIONS:
-Add your custom game instructions and strategy here.
+Add your game instructions and strategy here.
 For example, explain the game rules, objectives, and optimal strategies.
 
 # TURN:
