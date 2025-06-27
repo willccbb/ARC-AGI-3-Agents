@@ -92,9 +92,7 @@ class Swarm:
 
         # Provide web link to scorecard
         if card_id_for_url:
-            scorecard_url = (
-                f"https://sandbox.internal.arc-prize.com/scorecards/{card_id_for_url}"
-            )
+            scorecard_url = f"{self.ROOT_URL}/scorecards/{card_id_for_url}"
             logger.info(f"View your scorecard online: {scorecard_url}")
 
         self.cleanup(scorecard)
