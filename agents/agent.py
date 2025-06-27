@@ -238,7 +238,6 @@ class Playback(Agent):
     def choose_action(
         self, frames: list[FrameData], latest_frame: FrameData
     ) -> GameAction:
-        # FPS control for playback
         loop_start_time = time.time()
 
         if self.action_counter >= len(self.recorded_actions):
@@ -261,7 +260,6 @@ class Playback(Agent):
             f"Playback action {self.action_counter}: {action.name} with data {data}"
         )
 
-        # Control FPS for consistent playback speed
         target_frame_time = 1.0 / getattr(self, "PLAYBACK_FPS", 5)
         elapsed_time = time.time() - loop_start_time
         sleep_time = max(0, target_frame_time - elapsed_time)

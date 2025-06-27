@@ -418,6 +418,7 @@ class ReasoningLLM(LLM, Agent):
         # Store reasoning metadata in the action.reasoning field
         action.reasoning = {
             "model": self.MODEL,
+            "action_chosen": action.name,
             "reasoning_tokens": self._last_reasoning_tokens,
             "total_reasoning_tokens": self._total_reasoning_tokens,
             "game_context": {
@@ -512,6 +513,7 @@ class GuidedLLM(LLM, Agent):
         # Store reasoning metadata in the action.reasoning field
         action.reasoning = {
             "model": self.MODEL,
+            "action_chosen": action.name,
             "reasoning_effort": self.REASONING_EFFORT,
             "reasoning_tokens": self._last_reasoning_tokens,
             "total_reasoning_tokens": self._total_reasoning_tokens,
