@@ -44,6 +44,7 @@ class Random(Agent):
 
         if action.is_simple():
             action.set_data({"game_id": self.game_id})
+            action.reasoning = f"RNG told me to pick {action.value}"
         elif action.is_complex():
             action.set_data(
                 {
@@ -52,6 +53,10 @@ class Random(Agent):
                     "y": random.randint(0, 63),
                 }
             )
+            action.reasoning = {
+                "desired_action": f"{action.value}",
+                "my_reason": "RNG said so!",
+            }
         return action
 
 

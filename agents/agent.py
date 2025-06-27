@@ -123,6 +123,8 @@ class Agent(ABC):
             data["card_id"] = self.card_id
         if self.guid:
             data["guid"] = self.guid
+        if action.reasoning:
+            data["reasoning"] = action.reasoning
 
         json_str = json.dumps(data)
         r = self._session.post(
