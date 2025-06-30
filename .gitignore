@@ -90,3 +90,7 @@ agents/rl_agent/logs
 wandb
 logs
 llm_logs
+
+# Temp files for testing
+tests-temp/
+pytest.ini

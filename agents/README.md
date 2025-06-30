@@ -105,27 +105,7 @@ Enum representing game states:
 
 ### Creating a New Agent
 
-To add new agent types:
-
-1. Create a new class inheriting from `Agent`
-2. Implement `is_done()` and `choose_action()` methods
-3. Add your agent to the `AVAILABLE_AGENTS` dictionary in `__init__.py`
-4. Configure any special parameters as class attributes
-
-Example:
-```python
-class MyCustomAgent(Agent):
-    MAX_ACTIONS = 80
-    CUSTOM_PARAM = "value"
-    
-    def is_done(self, frames, latest_frame):
-        # Your logic here
-        pass
-        
-    def choose_action(self, frames, latest_frame):
-        # Your logic here
-        pass
-```
+Read the [Agent Templates](templates/README.md) README for a quickstart and examples.
 
 ## Recording and Playback
 

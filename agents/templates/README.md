@@ -1,6 +1,6 @@
 # Agent Templates
 
-This directory contains template files for agents that run on ARC-AGI-3.
+This directory contains template files (Simple, LLM, ReasoningLLM) to build agents that run on ARC-AGI-3.
 
 ## Quick Start Guide
 
@@ -65,7 +65,7 @@ This directory contains template files for agents that run on ARC-AGI-3.
 3. **Register and run:**
    Same as above, but use your LLM agent class.
 
-### Building a Reasoning LLM Agent
+### Building a Reasoning LLM Agent (Recommended)
 
 1. **Set up OpenAI API:**
    ```bash
@@ -73,7 +73,7 @@ This directory contains template files for agents that run on ARC-AGI-3.
    OPENAI_SECRET_KEY=your_api_key_here
    ```
 
-2. **Use the ReasoningLLM template (o4-mini):**
+2. **Use the ReasoningLLM template:**
    ```python
    from agents.templates.llm_agents import ReasoningLLM
    
