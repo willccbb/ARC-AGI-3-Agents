@@ -1,6 +1,6 @@
 # Agent Templates
 
-This directory contains template files (Simple, LLM, ReasoningLLM) to build agents that run on ARC-AGI-3.
+This directory contains template files (Simple, LLM, ReasoningLLM) to build agents to run on ARC-AGI-3.
 
 ## Quick Start Guide
 

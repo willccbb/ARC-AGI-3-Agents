@@ -103,10 +103,6 @@ Enum representing game states:
 - Validation ensures all action data is properly formatted
 - Scorecard system tracks both successes and failures (see `get_scorecard()` in `agent.py`)
 
-### Creating a New Agent
-
-Read the [Agent Templates](templates/README.md) README for a quickstart and examples.
-
 ## Recording and Playback
 
 The ARC-AGI-3 agent system includes recording and playback functionality for analyzing agent behavior and debugging gameplay sessions.
