@@ -91,7 +91,6 @@ class LLM(Agent):
                 }
             self.push_message(message1)
             action = GameAction.RESET
-            action.set_data({"game_id": self.game_id})
             return action
 
         # let the agent comment observations before choosing action
@@ -211,7 +210,6 @@ class LLM(Agent):
             data = {}
 
         action = GameAction.from_name(action_id)
-        data["game_id"] = self.game_id
         action.set_data(data)
         return action
 
