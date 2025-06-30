@@ -1,6 +1,6 @@
 # Agent Templates
 
-This directory contains template files to help developers quickly build custom agents to run on ARC-AGI-3.
+This directory contains template files for agents that run on ARC-AGI-3.
 
 ## Quick Start Guide
 
@@ -41,7 +41,7 @@ This directory contains template files to help developers quickly build custom a
    uv run main.py --agent=myagent --game=locksmith
    ```
 
-### Building an LLM Agent
+### Building an LLM Agent (Recommended)
 
 1. **Set up OpenAI API:**
    ```bash
@@ -78,7 +78,7 @@ This directory contains template files to help developers quickly build custom a
    from agents.templates.llm_agents import ReasoningLLM
    
    class MyReasoningAgent(ReasoningLLM):
-       # Uses o4-mini by default
+       model = "o4-mini"
        MAX_ACTIONS = 80
        
        def build_user_prompt(self, latest_frame):
@@ -88,7 +88,7 @@ This directory contains template files to help developers quickly build custom a
 3. **Register and run:**
    Same as above, but use your ReasoningLLM agent class.
 
-Example reasoning field content: (this is the reasoning field in the API response)
+Example reasoning field content:
    
    ```json
    {

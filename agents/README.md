@@ -36,45 +36,9 @@ For easy-to-use starting points and examples, check out the [Agent Templates](te
 
 ### Creating a Custom Agent
 
-To create a custom agent, inherit from the `Agent` base class and implement the required abstract methods:
+To create a custom agent, inherit from the `Agent` base class and implement the required abstract methods.
 
-```python
-from agents.agent import Agent
-from agents.structs import FrameData, GameAction, GameState
-
-class YourAgent(Agent):
-    def is_done(self, frames: list[FrameData], latest_frame: FrameData) -> bool:
-        """
-        Determine if the agent should stop playing.
-        
-        Args:
-            frames: List of all frames from the current game session
-            latest_frame: The most recent frame data
-            
-        Returns:
-            True if the agent should stop, False to continue playing
-        """
-        # Example: Stop when game is won or lost
-        return latest_frame.state in [GameState.WIN, GameState.GAME_OVER]
-
-    def choose_action(
-        self, frames: list[FrameData], latest_frame: FrameData
-    ) -> GameAction:
-        """
-        Choose the next action to take based on the current game state.
-        
-        Args:
-            frames: List of all frames from the current game session
-            latest_frame: The most recent frame data
-            
-        Returns:
-            The GameAction to execute
-        """
-        # Example: Choose ACTION1
-        action = GameAction.ACTION1
-        action.set_data({"game_id": self.game_id})
-        return action
-```
+Look at the [Agent Templates](templates/README.md) README for a quickstart and examples.
 
 ### Base Agent Class
 
@@ -114,7 +78,7 @@ Enum representing all possible actions:
 - `ACTION1` through `ACTION5` - Simple actions (game-specific semantics)
 - `ACTION6` - Complex action requiring x,y coordinates
 
-Further explanation is in the [Game Action Semantics](#game-action-semantics) section.
+Further explanation is in the [Game Actions](#game-actions) section.
 
 ```python
 # Simple action
