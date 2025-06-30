@@ -43,12 +43,10 @@ class Random(Agent):
             action = random.choice([a for a in GameAction if a is not GameAction.RESET])
 
         if action.is_simple():
-            action.set_data({"game_id": self.game_id})
             action.reasoning = f"RNG told me to pick {action.value}"
         elif action.is_complex():
             action.set_data(
                 {
-                    "game_id": self.game_id,
                     "x": random.randint(0, 63),
                     "y": random.randint(0, 63),
                 }

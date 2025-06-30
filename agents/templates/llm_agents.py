@@ -4,6 +4,9 @@ import os
 import textwrap
 from typing import Any, Optional
 
+import openai
+from openai import OpenAI as OpenAIClient
+
 from ..agent import Agent
 from ..structs import FrameData, GameAction, GameState
 
@@ -52,8 +55,6 @@ class LLM(Agent):
         self, frames: list[FrameData], latest_frame: FrameData
     ) -> GameAction:
         """Choose which action the Agent should take, fill in any arguments, and return it."""
-        import openai
-        from openai import OpenAI as OpenAIClient
 
         logging.getLogger("openai").setLevel(logging.CRITICAL)
         logging.getLogger("httpx").setLevel(logging.CRITICAL)
@@ -90,7 +91,6 @@ class LLM(Agent):
                 }
             self.push_message(message1)
             action = GameAction.RESET
-            action.set_data({"game_id": self.game_id})
             return action
 
         # let the agent comment observations before choosing action
@@ -210,7 +210,6 @@ class LLM(Agent):
             data = {}
 
         action = GameAction.from_name(action_id)
-        data["game_id"] = self.game_id
         action.set_data(data)
         return action
 
