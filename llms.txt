@@ -12,9 +12,635 @@ ARC-AGI-3-Agents/
 │   ├── recorder.py           # Game recording functionality
 │   ├── structs.py            # Data structures (FrameData, GameAction, etc.)
 │   ├── swarm.py              # Multi-agent orchestration
-│   └── README.md             # Agent documentation
+│   ├── README.md             # Agent documentation
+│   └── templates/            # Agent templates and examples
+│       ├── llm_agents.py     # LLM agent implementations
+│       ├── random_agent.py   # Simple random agent template
+│       └── README.md         # Template documentation and guides
+├── tests/                    # Test suite
+│   ├── __init__.py
+│   ├── conftest.py           # Test configuration
+│   ├── integration/          # Integration tests
+│   │   └── test_integration.py
+│   └── unit/                 # Unit tests
+│       ├── test_core.py
+│       ├── test_recorder.py
+│       └── test_swarm.py
+├── recordings/               # Auto-generated gameplay recordings
 ├── main.py                   # Entry point for running agents
 ├── pyproject.toml            # Project dependencies and configuration
-├── recordings/               # Auto-generated gameplay recordings
+├── pytest.ini               # Test configuration
+├── llms.txt                  # Comprehensive documentation for LLMs
+├── uv.lock                   # Dependency lock file
 └── README.md                 # Main project documentation
 ```
+
+## Quickstart
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if not aready installed.
+
+1. Clone the ARC-AGI-3-Agents repo and enter the directory.
+
+```bash
+git clone https://github.com/arcprize/ARC-AGI-3-Agents.git
+cd ARC-AGI-3-Agents
+```
+
+2. Copy over .env_example to .env
+
+```bash
+cp .env_example .env
+```
+
+3. Input your API key from the [ARC-AGI-3 Website](https://sandbox.internal.arc-prize.com/) into the `ARC_API_KEY` field in the .env file.
+
+4. Run the random agent (generates random actions) against the locksmith game.
+
+```bash
+uv run main.py --agent=random --game=locksmith
+```
+
+## Agents
+
+For detailed information about AI play testing, creating custom agents, and the Agent API Reference, see the [Agents Documentation](agents/README.md).
+
+## REST API Reference
+
+### Get list of all games
+
+Returns a list of all available `game_id`'s for the benchmark.
+
+```bash
+curl https://sandbox.internal.arc-prize.com/api/games \
+    -H "X-API-Key: your_api_key_here"
+```
+
+```
+RESPONSE:
+[
+    {
+        "game_id":"locksmith-1d57d6daeb05",
+        "title":"Locksmith"
+    },
+    {
+        "game_id":"shiftex-91fcad9dbd17",
+        "title":"Shiftex"
+    }
+    ...
+]
+```
+
+### Open or Close a Scorecard
+
+In order for scoring to be tracked you must open a scordcard. When openning a score card you can provide an optional `source_url` and `tags`.
+
+**Note:** The built it `Swarm` class in `agents/swarm.py` handles openning, closing, and displaying a scorecard for you.
+
+```bash
+curl https://sandbox.internal.arc-prize.com/api/scorecard/open \
+    -X POST \
+    -H "Content-Type: application/json" \
+    -H "X-API-Key: your_api_key_here" \
+    -d '{"source_url": "<link_to_source_or_noteboot>", tags: ["agent", "LLM-o4-mini"]}'
+```
+
+```
+RESPONSE:
+{
+    "card_id": ":card_id"
+}
+```
+
+Once your agent is finished you can close the scorecard.
+
+```bash
+curl https://sandbox.internal.arc-prize.com/api/scorecard/close \
+    -X POST \
+    -H "Content-Type: application/json" \
+    -H "X-API-Key: your_api_key_here" \
+    -d '{"card_id": ":card_id"}'
+```
+```
+RESPONSE:
+{
+    "won": INT,
+    "played": INT,
+    "total_actions": INT,
+    "score": INT,
+    "source_url": ":source_url"
+    "tags": [":tag1", "tag2"]
+    "cards": {
+        ...
+        "locksmith": {
+            "game_id": :game_id,
+            "total_plays": INT,
+            "total_actions": INT,
+            "scores": list[INT],
+            "states": list[Enum<NOT_FINISHED, WIN, GAME_OVER>]
+            "actions": list[INT]
+        },
+        ...
+    }
+}
+```
+
+While your agent is running you can get scorecard information on a given `card_id` and (optional) `game_id`
+
+```bash
+curl https://sandbox.internal.arc-prize.com/api/scorecard/:card_id -H "X-API-Key: your_api_key_here"
+curl https://sandbox.internal.arc-prize.com/api/scorecard/:card_id/:game_id -H "X-API-Key: your_api_key_here"
+```
+
+```
+RESPONSE:
+{
+    "won": INT,
+    "played": INT,
+    "total_actions": INT,
+    "score": INT,
+    "source_url": ":source_url"
+    "tags": [":tag1", "tag2"]
+    "cards": {
+        ...
+        "locksmith": {
+            "game_id": :game_id,
+            "total_plays": INT,
+            "total_actions": INT,
+            "scores": list[INT],
+            "states": list[Enum<NOT_FINISHED, WIN, GAME_OVER>]
+            "actions": list[INT]
+        },
+        ...
+    }
+}
+```
+
+ARC-AGI-3 reports benchmarks scores along two axes: accuracy and efficiency. Accuracy can be assessed by looking at the count of games `won` while efficiency can assesed through the `total_actions` count. These top level properties sum across all game cards and plays.
+
+It can be useful to have a more granular understanding of game progression, which you can get within game cards and via the top level `score`; which is the sum of the highest score in each individual game. A game can be played more than once thus individual play sessions are enumerated within lists `scores`, `states`, and `actions`. The index position in the list correlated with the play session.
+
+Explanation of `states`:
+* `NOT_FINISHED`: the game was started and is in progress but player never reached `WIN` or `GAME_OVER`
+* `WIN`: the player reached the winning condition for the game
+* `GAME_OVER`: the player triggered the losing condition for the game
+
+Game `scores` are reported on cards. The score represents your level progression in the game. A score of 0 indicates you have yet to beat level 1, while a score of 5 would indicate you've passed level 5 and are on level 6 (if the game has it). Games are free to have as many levels as they wish, but they will always have at least one level.
+
+Scorecards are tracked for the duration of the `main.py` process and many can be open and closed during the running `main.py`.
+
+### Start (or reset) a game, receive the first game frame
+
+You must always start by first issuing a `RESET` action to a `game_id` before you send other actions.
+
+Issuing `RESET` again will return the specified `game_id` back to the beginning of the game.
+
+Resetting will clear the game's latest play session (state, score, and action count). Note session detals are tracked across plays on the final [scorecard](#get-scorecard).
+
+Each `game_id` can have many instances at a time so long as their `guid` is unique, you can run as many unique `game_id` + `guid` combinations as supported by the launch constraints.
+
+Game state will be set to `GAME_OVER` or `WIN` to represent if the player has won or lost a specific `game_id` + `guid` in response to the latest action input. To try a game again, you must next issue a `RESET` action to the `game_id`.
+
+Note: providing a `guid` for RESET is optional, but providing it will reset the game on the same driver as the previous session.  The `card_id` is also optional, but scoring is not tracked when `card_id` is not provided.
+
+```bash
+curl https://sandbox.internal.arc-prize.com/api/cmd/RESET \
+    -X POST \
+    -H "Content-Type: application/json" \
+    -H "X-API-Key: your_api_key_here" \
+    -d '{"game_id": ":game_id", "card_id", ":card_id", "guid": ":guid"}'
+```
+
+```
+RESPONSE:
+{
+    "game_id": :game_id,
+    "guid": :guid,
+    "frame": [
+        [[INT<0,15>, ...], ...],  // 2D grid, representing the beginning of the game
+    ],
+    "state": Enum<NOT_FINISHED, WIN, GAME_OVER>,
+    "score": 0,
+    "action_input": {
+        "id": 0
+        "data": {
+            "x": 0,
+            "y": 0
+        }
+    },
+}
+```
+
+### Game Actions
+
+```bash
+curl https://sandbox.internal.arc-prize.com/api/cmd/ACTION1 \
+    -X POST \
+    -H "Content-Type: application/json" \
+    -H "X-API-Key: your_api_key_here" \
+    -d '{"game_id": ":game_id", "guid": ":guid"}'
+
+```
+
+```
+RESPONSE:
+{
+    "game_id": :game_id,
+    "guid": :guid,
+    "frame": [
+        [[INT<0,15>, ...], ...],  // 2D grid, representing the game immediately after action
+        [[INT<0,15>, ...], ...],  // some games may advance multiple steps per action
+        ...                       // but games never advance without action
+    ],
+    "state": Enum<NOT_FINISHED, WIN, GAME_OVER>,
+    "score": INT<0,254>,
+    "action_input": {
+        "id": 1
+        "data": {
+            "x": 0,
+            "y": 0
+        }
+    },
+}
+```
+
+### Send complex action to a game, receive frame
+
+```bash
+curl https://sandbox.internal.arc-prize.com/api/cmd/ACTION6 \
+    -X POST \
+    -H "Content-Type: application/json" \
+    -H "X-API-Key: your_api_key_here" \
+    -d '{"game_id": ":game_id", "guid": ":guid", "x": INT<0,63>, "y": INT<0,63>}'
+```
+
+```
+RESPONSE:
+{
+    "game_id": :game_id,
+    "guid": :guid,
+    "frame": [
+        [[INT<0,15>, ...], ...],  // 2D grid
+        [[INT<0,15>, ...], ...],
+        ...
+    ],
+    "state": Enum<NOT_FINISHED, WIN, GAME_OVER>,
+    "score": INT<0,254>,
+    "action_input": {
+        "id": 6
+        "data": {
+            "x": :x,
+            "y": :y
+        }
+    },
+}
+```
+
+## Contest Submission
+
+Contest submissions are made by submitting this [Google Form](https://forms.gle/1234567890) (WIP). The form will ask for your agent name, a link to your agent's GitHub repo, and a link to your agent's scorecard, and a writeup of your agent's approach.
+
+## Contributing
+
+Install dev dependencies:
+
+```bash
+uv sync
+```
+
+Activate your development env:
+
+```bash
+source .venv/bin/activate
+```
+
+Finally install git hooks:
+
+```bash
+pre-commit install
+```
+
+You're now ready to contribute! This repo uses [`ruff`](https://github.com/astral-sh/ruff) to lint and format code and [`mypy`](https://github.com/python/mypy) for static type checking. You can run all of the tools manually like this:
+
+```bash
+pre-commit run --all-files
+```
+
+Note: by default these tools will run automatically before `git commit`. It's also recommended to set up `ruff` [inside your IDE](https://docs.astral.sh/ruff/editors/setup/).
+
+## Tests
+
+Work In Progress
+
+---
+
+# ARC-AGI-3 Agents
+
+This directory contains the agent system for ARC-AGI-3, including the base agent classes, data structures, and various agent implementations.
+
+## AI Play Testing
+
+Agents interact with games via a JSON-based REST API by sending actions through the API and receiving game grids. Their goal is to `WIN` and avoid `GAME_OVER`. Each game grid is 2D with a maximum dimension of `(INT<0,63>, INT<0,63>)`. Each grid is made up of grid cells represented by `INT<0,15>` (each grid cell has 16 different possible states). A sequence of grids makes a frame. Every game uses the same universal set of actions (documented below). However, action semantics are game specific.
+
+There are several default AI agents in the respository you can begin to experiment with! Here is a list of included agents:
+
+* `random` - Selects actions randomly
+* `llm` - Basic LLM agent using OpenAI models for decision making
+* `reasoningllm` - LLM agent that uses o4-mini and captures reasoning metadata.
+* `fastllm` - Similar to the LLM agent but skips observations for faster execution
+* `guidedllm` - LLM agent with explicit human-provided rules (for a specific game) to increase success rate on that game
+
+Note: LLM agents use OpenAI models, place your OpenAI API key in `.env`
+
+You can run an agent like this:
+
+```bash
+uv run main.py --agent=random --game=locksmith
+```
+
+The above command will play one specific game. You can also play all games like this:
+
+```bash
+uv run main.py --agent=random
+```
+
+When an agent finishes playing a game, it will print the scorecard to the console and provide a link to the game replay.
+
+## Agent Templates and Quickstart
+
+For easy-to-use starting points and examples, check out the [Agent Templates](templates/README.md) which provide ready-to-use agent classes and customizable examples.
+
+## Agent API Reference
+
+### Creating a Custom Agent
+
+To create a custom agent, inherit from the `Agent` base class and implement the required abstract methods.
+
+Look at the [Agent Templates](templates/README.md) README for a quickstart and examples.
+
+### Base Agent Class
+
+The `Agent` class provides the following key features:
+
+#### Properties
+- `state: GameState` - Current game state (WIN, GAME_OVER, NOT_FINISHED)
+- `score: int` - Current game score
+- `action_counter: int` - Number of actions taken
+- `frames: list[FrameData]` - All frames from the current session
+- `fps: float` - Actions per second performance metric
+
+#### Configuration
+- `MAX_ACTIONS: int = 80` - Maximum actions before auto-termination
+- `card_id: str` - Scorecard ID for tracking performance
+- `game_id: str` - The specific game being played
+- `guid: str` - Unique identifier for this game session
+
+### Data Structures
+
+#### FrameData
+Represents a single frame of game data:
+```python
+class FrameData(BaseModel):
+    game_id: str = ""
+    frame: list[list[list[int]]] = [] # 3D array representing game grids
+    state: GameState = GameState.NOT_PLAYED
+    score: int = Field(0, ge=0, le=254)
+    action_input: ActionInput = Field(default_factory=lambda: ActionInput())
+    guid: Optional[str] = None
+    full_reset: bool = False
+```
+
+#### GameAction
+Enum representing all possible actions:
+- `RESET` - Reset the game to initial state
+- `ACTION1` through `ACTION5` - Simple actions (game-specific semantics)
+- `ACTION6` - Complex action requiring x,y coordinates
+
+Further explanation is in the [Game Actions](#game-actions) section.
+
+```python
+# Simple action
+action = GameAction.ACTION1
+action.set_data({"game_id": "your_game_id"})
+
+# Complex action with coordinates
+action = GameAction.ACTION6
+action.set_data({"game_id": "your_game_id", "x": 5, "y": 10})
+```
+
+#### GameState
+Enum representing game states:
+- `NOT_PLAYED` - Game hasn't started
+- `NOT_FINISHED` - Game is in progress
+- `WIN` - Player has won
+- `GAME_OVER` - Player has lost
+
+### Error Handling/Limits
+
+- Agents automatically stop after `MAX_ACTIONS` to prevent infinite loops (default is 100)
+- Validation ensures all action data is properly formatted
+- Scorecard system tracks both successes and failures (see `get_scorecard()` in `agent.py`)
+
+## Recording and Playback
+
+The ARC-AGI-3 agent system includes recording and playback functionality for analyzing agent behavior and debugging gameplay sessions.
+
+### Automatic Recording
+
+All agent gameplay is automatically recorded by default and stored in the `recordings/` directory with GUID-based filenames like:
+```
+locksmith-6cbb1acf0530.random.100.a1b2c3d4-e5f6-7890-abcd-ef1234567890.recording.jsonl
+```
+
+The filename format is: `{game_id}.{agent_type}.{max_actions}.{guid}.recording.jsonl`
+
+You will be able to view these recordings in the Arc UI.
+
+### Recording File Format
+
+Recordings are stored in JSONL format with timestamped entries:
+
+```json
+{"timestamp": "2024-01-15T10:30:45.123456+00:00", "data": {"game_id": "locksmith", "frame": [...], "state": "NOT_FINISHED", "score": 5, "action_input": {"id": 0, "data": {"game_id": "locksmith"}, "reasoning": "..."}, "guid": "...", "full_reset": false}}
+{"timestamp": "2024-01-15T10:30:46.234567+00:00", "data": {"game_id": "locksmith", "frame": [...], "state": "NOT_FINISHED", "score": 6, "action_input": {"id": 1, "data": {"game_id": "locksmith"}, "reasoning": "..."}, "guid": "...", "full_reset": false}}
+```
+
+### Playback Functionality
+
+The system includes a Playback agent that can replay previously recorded sessions.
+
+#### Running Playback
+
+To replay a recorded session, use the recording filename as the agent name:
+
+```bash
+uv run main.py --agent="game.agent.100.guid.recording.jsonl" --game=game
+```
+
+Example:
+```bash
+uv run main.py --agent="locksmith-6cbb1acf0530.random.100.ee8571b9-0210-4ec4-8cfe-1a194f32e154.recording.jsonl" --game=locksmith
+```
+
+After running an agent, you can view the visual replay of the gameplay session on the ARC-AGI-3 website.
+
+## Game Actions
+
+All allowable actions:
+* `RESET`
+* `ACTION1`
+* `ACTION2`
+* `ACTION3`
+* `ACTION4`
+* `ACTION5`
+* `ACTION6` `{x: INT<0,63>, y: INT<0,63>}`
+
+Actions 1 through 5 are simple actions that represent a single input into the game. Action 6 is a complex action which requires you to also send an `x, y` game grid coordinate.
+
+Games are allowed to assign semantics to both simple and complex actions however they see fit. For example, a game could assign the following semantics:
+* `ACTION1`: move up
+* `ACTION2`: move down
+* `ACTION3`: move left
+* `ACTION4`: move right
+* `ACTION5`: use/interact with current cell
+* `ACTION6`: select cell `x, y`
+
+Discovering and interpreting semantics for each game is intentionally part of the challenge. The ARC-AGI-3 game state never advances without player input.
+
+Every action response contains a `score` with range `INT<0,254>`. The score represents your level progression in the game. A score of 0 indicates you have yet to beat level 1, while a score of 5 would indicate you've passed level 5 and are on level 6 (if the game has it). Games are free to have as many levels as they wish, but they will always have at least one level.
+
+Every action will result in at least one grid in the frame. However, some games may occasionally return multiples frame grids per action in order to show sequential intermediate game states.
+
+For example, if a player pushes a object in the middle of the grid, a game may return sequential grids showing the object moving one grid cell at a time all the way to the edge of the grid.
+
+Beating a level is indicated by an incrementing of the score by one _and_ two or more frames being returned in the response.
+
+---
+
+# Agent Templates
+
+This directory contains template files (Simple, LLM, ReasoningLLM) to build agents to run on ARC-AGI-3.
+
+## Quick Start Guide
+
+### Building a Simple Agent
+
+1. **Copy the random agent template:**
+   ```bash
+   cp agents/templates/random_agent.py agents/my_agent.py
+   ```
+
+2. **Customize your agent:**
+   ```python
+   class MyAgent(Agent):
+       MAX_ACTIONS = 80
+       
+       def is_done(self, frames, latest_frame):
+           # Define when your agent should stop
+           return latest_frame.state == GameState.WIN
+       
+       def choose_action(self, frames, latest_frame):
+           # Implement your decision logic
+           return GameAction.ACTION1
+   ```
+
+3. **Register your agent:**
+   Add to `agents/__init__.py`:
+   ```python
+   from .my_agent import MyAgent
+   
+   AVAILABLE_AGENTS = {
+       # ... existing agents ...
+       "myagent": MyAgent,
+   }
+   ```
+
+4. **Run your agent:**
+   ```bash
+   uv run main.py --agent=myagent --game=locksmith
+   ```
+
+### Building an LLM Agent (Recommended)
+
+1. **Set up OpenAI API:**
+   ```bash
+   # Add to your .env file
+   OPENAI_API_KEY=your_api_key_here
+   ```
+
+2. **Copy the LLM template:**
+   ```python
+   from agents.templates.llm_agents import LLM
+   
+   class MyLLMAgent(LLM):
+       MODEL = "gpt-4o-mini"
+       MAX_ACTIONS = 80
+       
+       def build_user_prompt(self, latest_frame):
+           # Customize the prompt for your specific game
+           return "Your custom game instructions here..."
+   ```
+
+3. **Register and run:**
+   Same as above, but use your LLM agent class.
+
+### Building a Reasoning LLM Agent (Recommended)
+
+1. **Set up OpenAI API:**
+   ```bash
+   # Add to your .env file
+   OPENAI_API_KEY=your_api_key_here
+   ```
+
+2. **Use the ReasoningLLM template:**
+   ```python
+   from agents.templates.llm_agents import ReasoningLLM
+   
+   class MyReasoningAgent(ReasoningLLM):
+       model = "o4-mini"
+       MAX_ACTIONS = 80
+       
+       def build_user_prompt(self, latest_frame):
+           return "Complex reasoning task instructions..."
+   ```
+
+3. **Register and run:**
+   Same as above, but use your ReasoningLLM agent class.
+
+**How the reasoning field works:**
+The `ReasoningLLM` template automatically captures and populates the reasoning field for each action. You don't need to manually submit it - the framework handles this by:
+- Tracking reasoning tokens from the model's response
+- Recording game context (score, state, action counter)
+- Storing model metadata and decision information
+
+Example reasoning field content (automatically generated):
+   
+   ```json
+   {
+     "model": "o4-mini",
+     "action_chosen": "ACTION2",
+     "reasoning_tokens": 150,
+     "total_reasoning_tokens": 850,
+     "game_context": {
+       "score": 3,
+       "state": "NOT_FINISHED",
+       "action_counter": 15,
+       "frame_count": 8
+     },
+     "response_preview": "Based on the current state..."
+   }
+   ```
+
+This reasoning field is automatically attached to each `GameAction` and supports any valid JSON for custom implementations.
+
+## Agent Class Methods
+
+### Required Methods to Override
+- `is_done(frames, latest_frame)`: Decide when to stop playing
+- `choose_action(frames, latest_frame)`: Select the next action
+
+### Optional Methods to Override
+- `name`: Property that returns the agent's display name
+- `cleanup()`: Called when the agent finishes playing
+- For LLM agents:
+  - `build_user_prompt()`: Customize the LLM prompt
+  - `build_func_resp_prompt()`: Customize observation prompts
