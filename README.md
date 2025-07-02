@@ -293,3 +293,15 @@ pre-commit run --all-files
 ```
 
 Note: by default these tools will run automatically before `git commit`. It's also recommended to set up `ruff` [inside your IDE](https://docs.astral.sh/ruff/editors/setup/).
+
+## Tests
+
+Tests are located in the `tests` directory. They are written using `pytest` and `httpx`.
+
+To run the tests, use the following command:
+
+```bash
+pytest
+```
+
+For more information on how to contribute tests, see the [Tests README](tests/README.md).
