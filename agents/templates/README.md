@@ -46,7 +46,7 @@ This directory contains template files (Simple, LLM, ReasoningLLM) to build agen
 1. **Set up OpenAI API:**
    ```bash
    # Add to your .env file
-   OPENAI_SECRET_KEY=your_api_key_here
+   OPENAI_API_KEY=your_api_key_here
    ```
 
 2. **Copy the LLM template:**
@@ -70,7 +70,7 @@ This directory contains template files (Simple, LLM, ReasoningLLM) to build agen
 1. **Set up OpenAI API:**
    ```bash
    # Add to your .env file
-   OPENAI_SECRET_KEY=your_api_key_here
+   OPENAI_API_KEY=your_api_key_here
    ```
 
 2. **Use the ReasoningLLM template:**
@@ -88,24 +88,31 @@ This directory contains template files (Simple, LLM, ReasoningLLM) to build agen
 3. **Register and run:**
    Same as above, but use your ReasoningLLM agent class.
 
-Example reasoning field content:
+**How the reasoning field works:**
+The `ReasoningLLM` template automatically captures and populates the reasoning field for each action. You don't need to manually submit it - the framework handles this by:
+- Tracking reasoning tokens from the model's response
+- Recording game context (score, state, action counter)
+- Storing model metadata and decision information
+
+Example reasoning field content (automatically generated):
    
    ```json
    {
      "model": "o4-mini",
      "action_chosen": "ACTION2",
-     "reasoning_tokens_last_response": 150,
-     "total_reasoning_tokens_session": 850,
+     "reasoning_tokens": 150,
+     "total_reasoning_tokens": 850,
      "game_context": {
        "score": 3,
        "state": "NOT_FINISHED",
-       "action_counter": 15
+       "action_counter": 15,
+       "frame_count": 8
      },
-     "decision_summary": "Selected ACTION2 based on o4-mini reasoning"
+     "response_preview": "Based on the current state..."
    }
    ```
 
-The reasoning field is opaque and supports any valid JSON.
+This reasoning field is automatically attached to each `GameAction` and supports any valid JSON for custom implementations.
 
 ## Agent Class Methods
 

@@ -16,7 +16,7 @@ There are several default AI agents in the respository you can begin to experime
 
 Note: LLM agents use OpenAI models, place your OpenAI API key in `.env`
 
-You can run an agent like this, which opens a browser to view gameplay:
+You can run an agent like this:
 
 ```bash
 uv run main.py --agent=random --game=locksmith
@@ -27,6 +27,8 @@ The above command will play one specific game. You can also play all games like 
 ```bash
 uv run main.py --agent=random
 ```
+
+When an agent finishes playing a game, it will print the scorecard to the console and provide a link to the game replay.
 
 ## Agent Templates and Quickstart
 

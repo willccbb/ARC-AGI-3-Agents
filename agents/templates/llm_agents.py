@@ -59,7 +59,7 @@ class LLM(Agent):
         logging.getLogger("openai").setLevel(logging.CRITICAL)
         logging.getLogger("httpx").setLevel(logging.CRITICAL)
 
-        client = OpenAIClient(api_key=os.environ.get("OPENAI_SECRET_KEY", ""))
+        client = OpenAIClient(api_key=os.environ.get("OPENAI_API_KEY", ""))
 
         functions = self.build_functions()
         tools = self.build_tools()

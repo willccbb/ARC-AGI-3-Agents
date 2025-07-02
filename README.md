@@ -19,7 +19,7 @@ cd ARC-AGI-3-Agents
 cp .env_example .env
 ```
 
-3. Input your API key from the [ARC-AGI-3 Website](https://sandbox.internal.arc-prize.com/) into the .env file.
+3. Input your API key from the [ARC-AGI-3 Website](https://sandbox.internal.arc-prize.com/) into the `ARC_API_KEY` field in the .env file.
 
 4. Run the random agent (generates random actions) against the locksmith game.
 
@@ -151,7 +151,7 @@ Explanation of `states`:
 * `WIN`: the player reached the winning condition for the game
 * `GAME_OVER`: the player triggered the losing condition for the game
 
-Game `scores` are reported on cards. Scoring is non-monotonic and semantic per game (thus no absolute meaning). For example, in some games `score` may indicate which level the player is on. In others, it may be a count of items collected, etc. Universally, increasing `score` means the player is getting closer to winning.
+Game `scores` are reported on cards. The score represents your level progression in the game. A score of 0 indicates you have yet to beat level 1, while a score of 5 would indicate you've passed level 5 and are on level 6 (if the game has it). Games are free to have as many levels as they wish, but they will always have at least one level.
 
 Scorecards are tracked for the duration of the `main.py` process and many can be open and closed during the running `main.py`.
 
@@ -296,4 +296,12 @@ Note: by default these tools will run automatically before `git commit`. It's al
 
 ## Tests
 
-Work In Progress
+Tests are located in the `tests` directory. They are written using `pytest` and `httpx`.
+
+To run the tests, use the following command:
+
+```bash
+pytest
+```
+
+For more information on how to contribute tests, see the [Tests README](tests/README.md).
