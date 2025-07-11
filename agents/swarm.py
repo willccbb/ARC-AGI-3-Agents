@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Optional, Type
 
 import requests
 
+from .agentops import initialize as initialize_agentops
 from .structs import Scorecard
 
 if TYPE_CHECKING:
@@ -37,8 +38,12 @@ class Swarm:
         agent: str,
         ROOT_URL: str,
         games: list[str],
+        agentops_api_key: Optional[str] = None,
     ) -> None:
         from . import AVAILABLE_AGENTS
+
+        # Initialize AgentOps tracing
+        initialize_agentops(api_key=agentops_api_key)
 
         self.GAMES = games
         self.ROOT_URL = ROOT_URL
@@ -53,6 +58,16 @@ class Swarm:
         }
         self._session = requests.Session()
         self._session.headers.update(self.headers)
+
+        # Set up base tags for tracing
+        if self.agent_name.endswith(".recording.jsonl"):
+            # Extract GUID from playback filename
+            # Format: game.agent.count.guid.recording.jsonl
+            parts = self.agent_name.split(".")
+            guid = parts[-3] if len(parts) >= 4 else "unknown"
+            self.tags = ["agent", "playback", guid]
+        else:
+            self.tags = ["agent", self.agent_name]
 
     def main(self) -> Scorecard:
         """The main orchestration loop, continues until all agents are done."""

@@ -140,10 +140,12 @@ def main() -> None:
         )
         return
 
+    agentops_api_key = os.getenv("AGENTOPS_API_KEY")
     swarm = Swarm(
         args.agent,
         ROOT_URL,
         games,
+        agentops_api_key=agentops_api_key,
     )
     agent_thread = threading.Thread(target=partial(run_agent, swarm))
     agent_thread.daemon = True  # die when the main thread dies

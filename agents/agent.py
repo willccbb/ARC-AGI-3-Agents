@@ -9,6 +9,7 @@ import requests
 from pydantic import ValidationError
 from requests import Response
 
+from .agentops import trace_agent_session
 from .recorder import Recorder
 from .structs import FrameData, GameAction, GameState, Scorecard
 
@@ -33,6 +34,9 @@ class Agent(ABC):
     recorder: Recorder
     headers: dict[str, str]
     _session: requests.Session
+
+    # AgentOps tracing attributes
+    trace: Any = None
 
     def __init__(
         self,
@@ -59,6 +63,7 @@ class Agent(ABC):
         self._session = requests.Session()
         self._session.headers.update(self.headers)
 
+    @trace_agent_session
     def main(self) -> None:
         """The main agent loop. Play the game_id until finished, then exits."""
         self.timer = time.time()
