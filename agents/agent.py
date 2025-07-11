@@ -37,6 +37,7 @@ class Agent(ABC):
 
     # AgentOps tracing attributes
     trace: Any = None
+    tags: list[str]
 
     def __init__(
         self,
@@ -45,12 +46,14 @@ class Agent(ABC):
         agent_name: str,
         ROOT_URL: str,
         record: bool,
+        tags: Optional[list[str]] = None,
     ) -> None:
         self.ROOT_URL = ROOT_URL
         self.card_id = card_id
         self.game_id = game_id
         self.guid = ""
         self.agent_name = agent_name
+        self.tags = tags or []
         self.frames = [FrameData(score=0)]
         self._cleanup = True
         if record:

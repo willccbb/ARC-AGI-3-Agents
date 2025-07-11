@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Optional, Type
 
 import requests
 
-from .agentops import initialize as initialize_agentops
 from .structs import Scorecard
 
 if TYPE_CHECKING:
@@ -38,12 +37,8 @@ class Swarm:
         agent: str,
         ROOT_URL: str,
         games: list[str],
-        agentops_api_key: Optional[str] = None,
     ) -> None:
         from . import AVAILABLE_AGENTS
-
-        # Initialize AgentOps tracing
-        initialize_agentops(api_key=agentops_api_key)
 
         self.GAMES = games
         self.ROOT_URL = ROOT_URL
@@ -84,6 +79,7 @@ class Swarm:
                 agent_name=self.agent_name,
                 ROOT_URL=self.ROOT_URL,
                 record=True,
+                tags=self.tags,
             )
             self.agents.append(a)
 
