@@ -1,69 +1,86 @@
-# agents/agentops.py
+"""AgentOps integration module for tracing agent execution."""
+
 import functools
 import logging
-from typing import TYPE_CHECKING, Any, Optional
+import os
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 if TYPE_CHECKING:
     from .agent import Agent
 
+# Constants
+DEBUG_TRACING = os.getenv("DEBUG_AGENTOPS", "False").lower() == "true"
+
+# Module-level variables
 logger = logging.getLogger()
+AGENTOPS_LIBRARY_AVAILABLE = False
+is_initialized = False
+agentops_client: Optional[Any] = None
 
 
-class _NoOpAgentOps:
-    """A dummy class to use when agentops is not installed."""
+class NoOpAgentOps:
+    """No-op implementation when AgentOps is not available."""
 
     def init(self, *args: Any, **kwargs: Any) -> None:
+        """No-op initialization."""
         pass
 
-    class _NoOpTrace:
-        def __enter__(self) -> "_NoOpTrace":
+    class NoOpTrace:
+        """No-op trace context manager."""
+
+        def __enter__(self) -> "NoOpAgentOps.NoOpTrace":
             return self
 
         def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
             pass
 
         def set_status(self, *args: Any, **kwargs: Any) -> None:
+            """No-op status setting."""
             pass
 
-    def start_trace(self, *args: Any, **kwargs: Any) -> _NoOpTrace:
-        return self._NoOpTrace()
+    def start_trace(self, *args: Any, **kwargs: Any) -> NoOpTrace:
+        """Create a no-op trace context."""
+        return self.NoOpTrace()
 
 
-# Global state to track if AgentOps is available and initialized
-_agentops_available = False
-_agentops_initialized = False
-_agentops = None
-
+# Try to import AgentOps library
 try:
-    import agentops as _real_agentops
-    _agentops_available = True
-    _agentops = _real_agentops
-    logger.info("`agentops` library found, available for initialization.")
+    import agentops as agentops_module
+
+    AGENTOPS_LIBRARY_AVAILABLE = True
+    agentops_client = agentops_module
+    logger.info("AgentOps library found, available for initialization")
 except ImportError:
-    _agentops = _NoOpAgentOps()
-    logger.info("`agentops` not installed, tracing will be disabled.")
+    agentops_client = NoOpAgentOps()
+    logger.info("AgentOps not installed, tracing will be disabled")
 
 
 def initialize(api_key: Optional[str] = None) -> bool:
-    """
-    Initializes the AgentOps SDK with an optional API key.
-    
+    """Initialize the AgentOps SDK with an optional API key.
+
+    Args:
+        api_key: Optional AgentOps API key
+
     Returns:
         bool: True if successfully initialized, False otherwise
     """
-    global _agentops_initialized
-    
-    if not _agentops_available:
+    global is_initialized
+
+    if not AGENTOPS_LIBRARY_AVAILABLE:
         logger.info("AgentOps not available - using no-op implementation")
         return False
-        
+
     if not api_key:
         logger.warning("No AgentOps API key provided - using no-op implementation")
         return False
-    
+
+    if agentops_client is None:
+        logger.error("AgentOps client not initialized")
+        return False
+
     try:
-        _agentops.init(api_key=api_key, auto_start_session=False)
-        _agentops_initialized = True
+        agentops_client.init(api_key=api_key, auto_start_session=False)
+        is_initialized = True
         logger.info("AgentOps successfully initialized")
         return True
     except Exception as e:
@@ -73,77 +90,80 @@ def initialize(api_key: Optional[str] = None) -> bool:
 
 def is_available() -> bool:
     """Check if AgentOps is available and initialized."""
-    return _agentops_available and _agentops_initialized
+    return AGENTOPS_LIBRARY_AVAILABLE and is_initialized
 
 
-# Expose the agentops interface
-agentops = _agentops
+def _merge_tags(agent_instance: "Agent") -> list[str]:
+    """Merge tags with user tags taking precedence."""
+    user_tags = getattr(agent_instance, "user_tags", []) or []
+    final_tags = list(user_tags)
+    final_tags.extend(getattr(agent_instance, "tags", []))
+    final_tags.append(agent_instance.game_id)
+    final_tags.append(agent_instance.name)
+
+    # Deduplicate while preserving order (most specific first)
+    final_tags.reverse()
+    final_tags = list(dict.fromkeys(final_tags))
+    final_tags.reverse()
+
+    return final_tags
 
 
-def trace_agent_session(func):
-    """A decorator that wraps an agent's main execution loop to trace it."""
+def _set_trace_status(trace: Any, agent_instance: "Agent") -> None:
+    """Set trace status based on agent execution outcome."""
+    if not hasattr(trace, "set_status"):
+        return
+
+    try:
+        if agent_instance.action_counter >= agent_instance.MAX_ACTIONS:
+            trace.set_status("Indeterminate")
+        else:
+            trace.set_status("Success")
+    except AttributeError:
+        # AgentOps may handle status automatically
+        pass
+
+
+def _handle_trace_error(trace: Any, agent_instance: "Agent", error: Exception) -> None:
+    """Handle trace error by setting error status."""
+    if hasattr(agent_instance, "trace") and agent_instance.trace:
+        try:
+            if hasattr(agent_instance.trace, "set_status"):
+                agent_instance.trace.set_status(f"Error: {error}")
+        except AttributeError:
+            pass
+
+
+def trace_agent_session(func: Callable[..., Any]) -> Callable[..., Any]:
+    """Decorator that wraps an agent's main execution loop to trace it."""
 
     @functools.wraps(func)
     def wrapper(agent_instance: "Agent", *args: Any, **kwargs: Any) -> Any:
-        # Check if AgentOps is available and initialized
         if not is_available():
             logger.warning("AgentOps not available - skipping tracing")
             return func(agent_instance, *args, **kwargs)
-        
-        # 1. Tag Merging Strategy - User tags take precedence
-        # Start with the most specific tags and work backwards.
-        user_tags = getattr(agent_instance, "user_tags", []) or []
-        final_tags = list(user_tags)
-        final_tags.extend(getattr(agent_instance, "tags", []))
-        final_tags.append(agent_instance.game_id)
-        final_tags.append(agent_instance.name)
 
-        # Deduplicate by keeping the last occurrence, which is the most specific one.
-        final_tags.reverse()
-        final_tags = list(dict.fromkeys(final_tags))
-        final_tags.reverse()
+        final_tags = _merge_tags(agent_instance)
 
-        # Debug logging
-        logger.info(f"🔍 AGENTOPS TRACE DEBUG:")
-        logger.info(f"  - Agent: {agent_instance.name}")
-        logger.info(f"  - User tags: {user_tags}")
-        logger.info(f"  - Agent tags: {getattr(agent_instance, 'tags', [])}")
-        logger.info(f"  - Final tags: {final_tags}")
-        logger.info(f"  - AgentOps available: {is_available()}")
+        if DEBUG_TRACING:
+            logger.debug(
+                f"Starting AgentOps trace for {agent_instance.name} with tags: {final_tags}"
+            )
+
+        if agentops_client is None:
+            logger.error("AgentOps client not available")
+            return func(agent_instance, *args, **kwargs)
 
         try:
-            with agentops.start_trace(
+            with agentops_client.start_trace(
                 trace_name=agent_instance.name, tags=final_tags
             ) as trace:
-                logger.info(f"  - Trace started: {trace}")
                 agent_instance.trace = trace
                 result = func(agent_instance, *args, **kwargs)
-
-                # 2. Set Final Status based on execution outcome
-                # Note: AgentOps TraceContext may not have set_status method
-                # The trace status is typically managed automatically by the context manager
-                try:
-                    if agent_instance.action_counter >= agent_instance.MAX_ACTIONS:
-                        if hasattr(trace, "set_status"):
-                            trace.set_status("Indeterminate")
-                            logger.info(f"  - Trace status set to: Indeterminate")
-                    else:
-                        if hasattr(trace, "set_status"):
-                            trace.set_status("Success")
-                            logger.info(f"  - Trace status set to: Success")
-                except AttributeError:
-                    # AgentOps may handle status automatically
-                    logger.info(f"  - Trace status managed automatically")
-                    pass
+                _set_trace_status(trace, agent_instance)
                 return result
         except Exception as e:
-            if hasattr(agent_instance, "trace") and agent_instance.trace:
-                try:
-                    if hasattr(agent_instance.trace, "set_status"):
-                        agent_instance.trace.set_status(f"Error: {e}")
-                        logger.info(f"  - Trace status set to: Error: {e}")
-                except AttributeError:
-                    pass
+            _handle_trace_error(agent_instance.trace, agent_instance, e)
             logger.error(
                 f"Agent {agent_instance.name} failed with exception: {e}", exc_info=True
             )
