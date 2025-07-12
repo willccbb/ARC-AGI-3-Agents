@@ -25,10 +25,12 @@ class LLM(Agent):
     MODEL: str = "gpt-4o-mini"
     messages: list[dict[str, Any]]
     token_counter: int
+    user_tags: Optional[list[str]]
 
     _latest_tool_call_id: str = "call_12345"
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.user_tags = kwargs.pop("tags", None)
         super().__init__(*args, **kwargs)
         self.messages = []
         self.token_counter = 0
@@ -406,6 +408,7 @@ class ReasoningLLM(LLM, Agent):
         self._last_reasoning_tokens = 0
         self._last_response_content = ""
         self._total_reasoning_tokens = 0
+        self.user_tags = ["template"]
 
     def choose_action(
         self, frames: list[FrameData], latest_frame: FrameData
@@ -501,6 +504,7 @@ class GuidedLLM(LLM, Agent):
         self._last_reasoning_tokens = 0
         self._last_response_content = ""
         self._total_reasoning_tokens = 0
+        self.user_tags = ["template"]
 
     def choose_action(
         self, frames: list[FrameData], latest_frame: FrameData
