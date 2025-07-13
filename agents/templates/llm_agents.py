@@ -461,7 +461,7 @@ class ReasoningLLM(LLM, Agent):
                 )
                 self._total_reasoning_tokens += self._last_reasoning_tokens
                 logger.debug(
-                    f"Captured {self._last_reasoning_tokens} reasoning tokens from o1 response"
+                    f"Captured {self._last_reasoning_tokens} reasoning tokens from {self.MODEL} response"
                 )
 
 
