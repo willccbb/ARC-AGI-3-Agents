@@ -2,7 +2,6 @@
 
 import functools
 import logging
-import os
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
 if TYPE_CHECKING:
@@ -52,7 +51,9 @@ except ImportError:
     logger.info("AgentOps not installed, tracing will be disabled")
 
 
-def initialize(api_key: Optional[str] = None, log_level: Optional[int] = logging.INFO) -> bool:
+def initialize(
+    api_key: Optional[str] = None, log_level: Optional[int] = logging.INFO
+) -> bool:
     """Initialize the AgentOps SDK with an optional API key.
 
     Args:
