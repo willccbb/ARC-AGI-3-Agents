@@ -128,10 +128,9 @@ def _set_trace_status(trace: Any, agent_instance: "Agent") -> None:
 
 def _handle_trace_error(trace: Any, agent_instance: "Agent", error: Exception) -> None:
     """Handle trace error by setting error status."""
-    if hasattr(agent_instance, "trace") and agent_instance.trace:
+    if hasattr(trace, "set_status"):
         try:
-            if hasattr(agent_instance.trace, "set_status"):
-                agent_instance.trace.set_status(f"Error: {error}")
+            trace.set_status(f"Error: {error}")
         except AttributeError:
             pass
 
@@ -142,7 +141,7 @@ def trace_agent_session(func: Callable[..., Any]) -> Callable[..., Any]:
     @functools.wraps(func)
     def wrapper(agent_instance: "Agent", *args: Any, **kwargs: Any) -> Any:
         if not is_available():
-            logger.warning("AgentOps not available - skipping tracing")
+            logger.debug("AgentOps not available - skipping tracing")
             return func(agent_instance, *args, **kwargs)
 
         final_tags = _merge_tags(agent_instance)
@@ -164,7 +163,7 @@ def trace_agent_session(func: Callable[..., Any]) -> Callable[..., Any]:
                 _set_trace_status(trace, agent_instance)
                 return result
         except Exception as e:
-            _handle_trace_error(agent_instance.trace, agent_instance, e)
+            _handle_trace_error(trace, agent_instance, e)
             logger.error(
                 f"Agent {agent_instance.name} failed with exception: {e}", exc_info=True
             )
