@@ -20,17 +20,16 @@ class LLM(Agent):
     DO_OBSERVATION: bool = True
     REASONING_EFFORT: Optional[str] = None
     MODEL_REQUIRES_TOOLS: bool = False
+    USER_TAGS: list[str] = []
 
     MESSAGE_LIMIT: int = 10
     MODEL: str = "gpt-4o-mini"
     messages: list[dict[str, Any]]
     token_counter: int
-    user_tags: Optional[list[str]]
 
     _latest_tool_call_id: str = "call_12345"
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.user_tags = kwargs.pop("tags", None)
         super().__init__(*args, **kwargs)
         self.messages = []
         self.token_counter = 0
@@ -402,13 +401,13 @@ class ReasoningLLM(LLM, Agent):
     DO_OBSERVATION = True
     MODEL_REQUIRES_TOOLS = True
     MODEL = "o4-mini"
+    USER_TAGS: list[str] = ["template"]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._last_reasoning_tokens = 0
         self._last_response_content = ""
         self._total_reasoning_tokens = 0
-        self.user_tags = ["template"]
 
     def choose_action(
         self, frames: list[FrameData], latest_frame: FrameData
@@ -498,13 +497,13 @@ class GuidedLLM(LLM, Agent):
     MODEL_REQUIRES_TOOLS = True
     MESSAGE_LIMIT = 10
     REASONING_EFFORT = "high"
+    USER_TAGS: list[str] = ["template"]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._last_reasoning_tokens = 0
         self._last_response_content = ""
         self._total_reasoning_tokens = 0
-        self.user_tags = ["template"]
 
     def choose_action(
         self, frames: list[FrameData], latest_frame: FrameData

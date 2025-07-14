@@ -96,19 +96,10 @@ def is_available() -> bool:
 
 
 def _merge_tags(agent_instance: "Agent") -> list[str]:
-    """Merge tags with user tags taking precedence."""
-    user_tags = getattr(agent_instance, "user_tags", []) or []
-    final_tags = list(user_tags)
-    final_tags.extend(getattr(agent_instance, "tags", []))
-    final_tags.append(agent_instance.game_id)
-    final_tags.append(agent_instance.name)
-
-    # Deduplicate while preserving order (most specific first)
-    final_tags.reverse()
-    final_tags = list(dict.fromkeys(final_tags))
-    final_tags.reverse()
-
-    return final_tags
+    """Merge base tags and user tags with user tags taking precedence."""
+    base_tags = agent_instance.tags or []
+    user_tags = getattr(agent_instance.__class__, "USER_TAGS", [])
+    return list(dict.fromkeys(user_tags + base_tags))
 
 
 def _set_trace_status(trace: Any, agent_instance: "Agent") -> None:
