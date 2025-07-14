@@ -17,8 +17,8 @@ from typing import Optional
 
 import requests
 
-from agents.agentops import initialize as init_agentops
 from agents import AVAILABLE_AGENTS, Swarm
+from agents.agentops import initialize as init_agentops
 
 logger = logging.getLogger()
 
