@@ -145,6 +145,7 @@ def trace_agent_session(func: Callable[..., Any]) -> Callable[..., Any]:
             logger.error("AgentOps client not available")
             return func(agent_instance, *args, **kwargs)
 
+        trace = None
         try:
             with agentops_client.start_trace(
                 trace_name=agent_instance.name, tags=final_tags
@@ -154,7 +155,8 @@ def trace_agent_session(func: Callable[..., Any]) -> Callable[..., Any]:
                 _set_trace_status(trace, agent_instance)
                 return result
         except Exception as e:
-            _handle_trace_error(trace, agent_instance, e)
+            if trace is not None:
+                _handle_trace_error(trace, agent_instance, e)
             logger.error(
                 f"Agent {agent_instance.name} failed with exception: {e}", exc_info=True
             )
