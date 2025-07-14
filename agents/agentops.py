@@ -8,9 +8,6 @@ from typing import TYPE_CHECKING, Any, Callable, Optional
 if TYPE_CHECKING:
     from .agent import Agent
 
-# Constants
-DEBUG_TRACING = os.getenv("DEBUG_AGENTOPS", "False").lower() == "true"
-
 # Module-level variables
 logger = logging.getLogger()
 AGENTOPS_LIBRARY_AVAILABLE = False
@@ -55,7 +52,7 @@ except ImportError:
     logger.info("AgentOps not installed, tracing will be disabled")
 
 
-def initialize(api_key: Optional[str] = None) -> bool:
+def initialize(api_key: Optional[str] = None, log_level: Optional[int] = logging.INFO) -> bool:
     """Initialize the AgentOps SDK with an optional API key.
 
     Args:
@@ -79,7 +76,11 @@ def initialize(api_key: Optional[str] = None) -> bool:
         return False
 
     try:
-        agentops_client.init(api_key=api_key, auto_start_session=False)
+        agentops_client.init(
+            api_key=api_key,
+            auto_start_session=False,
+            log_level=log_level,
+        )
         is_initialized = True
         logger.info("AgentOps successfully initialized")
         return True
@@ -145,10 +146,9 @@ def trace_agent_session(func: Callable[..., Any]) -> Callable[..., Any]:
 
         final_tags = _merge_tags(agent_instance)
 
-        if DEBUG_TRACING:
-            logger.debug(
-                f"Starting AgentOps trace for {agent_instance.name} with tags: {final_tags}"
-            )
+        logger.debug(
+            f"Starting AgentOps trace for {agent_instance.name} with tags: {final_tags}"
+        )
 
         if agentops_client is None:
             logger.error("AgentOps client not available")
