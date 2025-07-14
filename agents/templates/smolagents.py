@@ -21,8 +21,8 @@ from ..agent import Agent
 logger = logging.getLogger()
 
 
-class SmolAgent(LLM, Agent):
-    """An agent that uses the Hugging Face's smolagents library to play games."""
+class CodingAgent(LLM, Agent):
+    """An agent that uses the Hugging Face's CodeAgent to play games."""
 
     MAX_ACTIONS: int = 100
     DO_OBSERVATION: bool = True
