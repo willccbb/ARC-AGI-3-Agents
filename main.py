@@ -18,7 +18,7 @@ from typing import Optional
 import requests
 
 from agents import AVAILABLE_AGENTS, Swarm
-from agents.agentops import initialize as init_agentops
+from agents.tracing import initialize as init_agentops
 
 logger = logging.getLogger()
 
@@ -142,7 +142,11 @@ def main() -> None:
         return
 
     # Initialize AgentOps client
-    init_agentops(api_key=os.getenv("AGENTOPS_API_KEY"), log_level=log_level)
+    agentops_initialized = init_agentops(
+        api_key=os.getenv("AGENTOPS_API_KEY"), log_level=log_level
+    )
+    if not agentops_initialized:
+        logger.warning("AgentOps initialization failed - tracing will be disabled")
 
     swarm = Swarm(
         args.agent,

@@ -9,9 +9,9 @@ import requests
 from pydantic import ValidationError
 from requests import Response
 
-from .agentops import trace_agent_session
 from .recorder import Recorder
 from .structs import FrameData, GameAction, GameState, Scorecard
+from .tracing import trace_agent_session
 
 logger = logging.getLogger()
 
