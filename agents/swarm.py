@@ -37,6 +37,7 @@ class Swarm:
         agent: str,
         ROOT_URL: str,
         games: list[str],
+        tags: list[str] = [],
     ) -> None:
         from . import AVAILABLE_AGENTS
 
@@ -53,6 +54,7 @@ class Swarm:
         }
         self._session = requests.Session()
         self._session.headers.update(self.headers)
+        self.tags = tags
 
     def main(self) -> Scorecard:
         """The main orchestration loop, continues until all agents are done."""
@@ -100,17 +102,7 @@ class Swarm:
         return scorecard
 
     def open_scorecard(self) -> str:
-        # Check if this is a playback agent and set appropriate tags
-        if self.agent_name.endswith(".recording.jsonl"):
-            # Extract GUID from playback filename
-            # Format: game.agent.count.guid.recording.jsonl
-            parts = self.agent_name.split(".")
-            guid = parts[-3] if len(parts) >= 4 else "unknown"
-            tags = ["agent", "playback", guid]
-        else:
-            tags = ["agent", self.agent_name]
-
-        json_str = json.dumps({"tags": tags})
+        json_str = json.dumps({"tags": self.tags})
 
         r = self._session.post(
             f"{self.ROOT_URL}/api/scorecard/open",
