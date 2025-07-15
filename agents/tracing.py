@@ -128,10 +128,9 @@ def trace_agent_session(func: Callable[..., Any]) -> Callable[..., Any]:
             logger.debug("AgentOps not available - skipping tracing")
             return func(agent_instance, *args, **kwargs)
 
-        final_tags = agent_instance.tags or []
-
+        tags = agent_instance.tags or []
         logger.debug(
-            f"Starting AgentOps trace for {agent_instance.name} with tags: {final_tags}"
+            f"Starting AgentOps trace for {agent_instance.name} with tags: {tags}"
         )
 
         if agentops_client is None:
@@ -141,7 +140,7 @@ def trace_agent_session(func: Callable[..., Any]) -> Callable[..., Any]:
         trace = None
         try:
             with agentops_client.start_trace(
-                trace_name=agent_instance.name, tags=final_tags
+                trace_name=agent_instance.name, tags=tags
             ) as trace:
                 agent_instance.trace = trace
                 result = func(agent_instance, *args, **kwargs)
