@@ -54,7 +54,7 @@ class Swarm:
         }
         self._session = requests.Session()
         self._session.headers.update(self.headers)
-        self.tags = tags
+        self.tags = tags.copy() if tags else []
 
         # Set up base tags for tracing
         if self.agent_name.endswith(".recording.jsonl"):
@@ -62,9 +62,9 @@ class Swarm:
             # Format: game.agent.count.guid.recording.jsonl
             parts = self.agent_name.split(".")
             guid = parts[-3] if len(parts) >= 4 else "unknown"
-            self.tags = ["agent", "playback", guid]
+            self.tags.extend(["playback", guid])
         else:
-            self.tags = ["agent", self.agent_name]
+            self.tags.extend(["agent", self.agent_name])
 
     def main(self) -> Scorecard:
         """The main orchestration loop, continues until all agents are done."""
