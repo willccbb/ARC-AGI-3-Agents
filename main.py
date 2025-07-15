@@ -88,6 +88,13 @@ def main() -> None:
         "--game",
         help="Choose a specific game_id for the agent to play. If none specified, an agent swarm will play all available games.",
     )
+    parser.add_argument(
+        "-t",
+        "--tags",
+        type=str,
+        help="Comma-separated list of tags for the scorecard (e.g., 'experiment,v1.0')",
+        default=None,
+    )
 
     args = parser.parse_args()
 
@@ -141,6 +148,14 @@ def main() -> None:
         )
         return
 
+    # Default tags always include agent type
+    tags = ["agent", args.agent]
+
+    # Append user-provided tags if any
+    if args.tags:
+        user_tags = [tag.strip() for tag in args.tags.split(",")]
+        tags.extend(user_tags)
+
     # Initialize AgentOps client
     agentops_initialized = init_agentops(
         api_key=os.getenv("AGENTOPS_API_KEY"), log_level=log_level
@@ -152,6 +167,7 @@ def main() -> None:
         args.agent,
         ROOT_URL,
         games,
+        tags=tags,  # Pass tags as keyword argument
     )
     agent_thread = threading.Thread(target=partial(run_agent, swarm))
     agent_thread.daemon = True  # die when the main thread dies
