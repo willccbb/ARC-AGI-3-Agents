@@ -95,13 +95,6 @@ def is_available() -> bool:
     return AGENTOPS_LIBRARY_AVAILABLE and is_initialized
 
 
-def _merge_tags(agent_instance: "Agent") -> list[str]:
-    """Merge base tags and user tags with user tags taking precedence."""
-    base_tags = agent_instance.tags or []
-    user_tags = getattr(agent_instance.__class__, "USER_TAGS", [])
-    return list(dict.fromkeys(user_tags + base_tags))
-
-
 def _set_trace_status(trace: Any, agent_instance: "Agent") -> None:
     """Set trace status based on agent execution outcome."""
     if not hasattr(trace, "set_status"):
@@ -135,7 +128,7 @@ def trace_agent_session(func: Callable[..., Any]) -> Callable[..., Any]:
             logger.debug("AgentOps not available - skipping tracing")
             return func(agent_instance, *args, **kwargs)
 
-        final_tags = _merge_tags(agent_instance)
+        final_tags = agent_instance.tags or []
 
         logger.debug(
             f"Starting AgentOps trace for {agent_instance.name} with tags: {final_tags}"

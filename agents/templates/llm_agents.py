@@ -20,7 +20,6 @@ class LLM(Agent):
     DO_OBSERVATION: bool = True
     REASONING_EFFORT: Optional[str] = None
     MODEL_REQUIRES_TOOLS: bool = False
-    USER_TAGS: list[str] = []
 
     MESSAGE_LIMIT: int = 10
     MODEL: str = "gpt-4o-mini"
@@ -401,7 +400,6 @@ class ReasoningLLM(LLM, Agent):
     DO_OBSERVATION = True
     MODEL_REQUIRES_TOOLS = True
     MODEL = "o4-mini"
-    USER_TAGS: list[str] = ["template"]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -497,7 +495,6 @@ class GuidedLLM(LLM, Agent):
     MODEL_REQUIRES_TOOLS = True
     MESSAGE_LIMIT = 10
     REASONING_EFFORT = "high"
-    USER_TAGS: list[str] = ["template"]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
