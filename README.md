@@ -29,7 +29,7 @@ export ARC_API_KEY="your_api_key_here"
 uv run main.py --agent=random --game=locksmith
 ```
 
-For more information, see the [documentation](https://three.arcprize.org/docs#quick-start).
+For more information, see the [documentation](https://three.arcprize.org/docs#quick-start) or the [tutorial video](https://youtu.be/xEVg9dcJMkw).
 
 ## Content submission
 
@@ -37,15 +37,24 @@ To submit your agent for the ARC-AGI-3 competition, please use this form: https:
 
 ## Contributing
 
-WIP
+We welcome contributions! To contribute to ARC-AGI-3-Agents, please follow these steps:
+
+1. Fork the repository and create a new branch for your feature or bugfix.
+2. Make your changes and ensure that all tests pass, you are welcome to add more tests for your specific fixes.
+3. Write clear commit messages describing your changes.
+4. Open a pull request with a description of your changes and the motivation behind them.
+
+If you have questions or need help, feel free to open an issue.
 
 ## Tests
 
-To run the tests, you will need to have `pytest` installed.
+To run the tests, you will need to have `pytest` installed. Run the tests like this:
 
 ```bash
 pytest
 ```
+
+For more information on tests, please see the [tests documentation](https://three.arcprize.org/docs#testing).
 
 ## License
 
