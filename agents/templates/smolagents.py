@@ -21,8 +21,8 @@ from ..agent import Agent
 logger = logging.getLogger()
 
 
-class CodingAgent(LLM, Agent):
-    """An agent that uses the Hugging Face's CodeAgent to play games."""
+class SmolCodingAgent(LLM, Agent):
+    """An agent that uses CodeAgent from the smolagents library to play games."""
 
     MAX_ACTIONS: int = 100
     DO_OBSERVATION: bool = True
@@ -241,8 +241,8 @@ Use the available tools to take actions in the game. The game is already reset, 
         )
 
 
-class VisionAgent(LLM, Agent):
-    """An agent that uses a multimodal model with smol-agents to play games by seeing them."""
+class SmolVisionAgent(LLM, Agent):
+    """An agent that uses a multimodal model with the smolagents library to play games by seeing them."""
 
     MAX_ACTIONS: int = 100
     DO_OBSERVATION: bool = True
