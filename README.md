@@ -262,6 +262,54 @@ RESPONSE:
 }
 ```
 
+## Observability (Optional)
+
+[AgentOps](https://agentops.ai/) is an observability platform designed for providing real-time monitoring, debugging, and analytics for your agent's behavior, helping you understand how your agents perform and make decisions.
+
+### Installation
+
+AgentOps is already included as an optional dependency in this project. To install it:
+
+```bash
+uv sync --agentops
+```
+
+Or if you're installing manually:
+
+```bash
+pip install -U agentops
+```
+
+### Getting Your API Key
+
+1. Visit [app.agentops.ai](https://app.agentops.ai) and create an account if you haven't already
+2. Once logged in, click on "New Project" to create a project for your ARC-AGI-3 agents
+3. Give your project a meaningful name (e.g., "ARC-AGI-3-Agents")
+4. After creating the project, you'll see your project dashboard
+5. Click on the "API Keys" tab on the left side & copy the API key
+
+### Configuration
+
+1. Add your AgentOps API key to your `.env` file:
+
+```bash
+AGENTOPS_API_KEY=aos_your_api_key_here
+```
+
+2. The AgentOps integration is automatically initialized when you run an agent. The tracing decorator `@trace_agent_session` is already applied to agent execution methods in the codebase.
+
+3. When you run your agent, you'll see AgentOps initialization messages and session URLs in the console:
+
+```bash
+🖇 AgentOps: Session Replay for your-agent-name: https://app.agentops.ai/sessions?trace_id=xxxxx
+```
+
+4. Click on the session URL to view real-time traces of your agent's execution. You can also view the traces in the AgentOps dashboard by locating the trace ID in the "Traces" tab.
+
+### Using AgentOps with Custom Agents
+
+If you're creating a custom agent, the tracing is automatically applied through the `@trace_agent_session` decorator on the `main()` method. No additional code changes are needed.
+
 ## Contest Submission
 
 Contest submissions are made by submitting this [Google Form](https://forms.gle/1234567890) (WIP). The form will ask for your agent name, a link to your agent's GitHub repo, and a link to your agent's scorecard, and a writeup of your agent's approach.
