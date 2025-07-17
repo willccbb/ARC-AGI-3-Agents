@@ -44,7 +44,7 @@ class ReasoningActionResponse(BaseModel):
 class ReasoningAgent(ReasoningLLM):
     """A reasoning agent that tracks screen history and builds hypotheses about game rules."""
 
-    MAX_ACTIONS = 40
+    MAX_ACTIONS = 400
     DO_OBSERVATION = True
     MODEL = "o4-mini"
     MESSAGE_LIMIT = 5
@@ -204,7 +204,7 @@ The game is complex, and may look like an IQ test.
 
 You need to determine how the game works on your own.
 
-To do so, we will provide you with a view of the game corresponding to the bird-eye view of the game.
+To do so, we will provide you with a view of the game corresponding to the bird-eye view of the game, along with the raw grid data.
 
 You can do 5 actions:
 - RESET (used to start a new game or level)
@@ -303,7 +303,8 @@ Hint:
                 ]
             )
 
-        user_message_text = f"Your previous action was: {json.dumps(latest_action.model_dump() if latest_action else None, indent=2)}\n\nAttached two images in the following order:\n1. Previous screen\n2. Current screen after the previous action\n\nWhat should you do next?"
+        raw_grid_text = self.pretty_print_3d(latest_frame.frame)
+        user_message_text = f"Your previous action was: {json.dumps(latest_action.model_dump() if latest_action else None, indent=2)}\n\nAttached are the visual screen and raw grid data.\n\nRaw Grid:\n{raw_grid_text}\n\nWhat should you do next?"
 
         current_image_b64 = base64.b64encode(map_image).decode()
         user_message_content.extend(
