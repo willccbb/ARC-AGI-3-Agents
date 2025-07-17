@@ -157,11 +157,7 @@ def main() -> None:
         tags.extend(user_tags)
 
     # Initialize AgentOps client
-    agentops_initialized = init_agentops(
-        api_key=os.getenv("AGENTOPS_API_KEY"), log_level=log_level
-    )
-    if not agentops_initialized:
-        logger.warning("AgentOps initialization failed - tracing will be disabled")
+    init_agentops(api_key=os.getenv("AGENTOPS_API_KEY"), log_level=log_level)
 
     swarm = Swarm(
         args.agent,

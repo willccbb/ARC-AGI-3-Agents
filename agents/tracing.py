@@ -9,7 +9,6 @@ if TYPE_CHECKING:
 
 # Module-level variables
 logger = logging.getLogger()
-AGENTOPS_LIBRARY_AVAILABLE = False
 is_initialized = False
 agentops_client: Optional[Any] = None
 
@@ -43,38 +42,32 @@ class NoOpAgentOps:
 try:
     import agentops as agentops_module
 
-    AGENTOPS_LIBRARY_AVAILABLE = True
     agentops_client = agentops_module
-    logger.info("AgentOps library found, available for initialization")
 except ImportError:
     agentops_client = NoOpAgentOps()
-    logger.info("AgentOps not installed, tracing will be disabled")
 
 
 def initialize(
     api_key: Optional[str] = None, log_level: Optional[int] = logging.INFO
-) -> bool:
+) -> None:
     """Initialize the AgentOps SDK with an optional API key.
 
     Args:
         api_key: Optional AgentOps API key
-
-    Returns:
-        bool: True if successfully initialized, False otherwise
+        log_level: Optional log level for AgentOps
     """
     global is_initialized
 
-    if not AGENTOPS_LIBRARY_AVAILABLE:
-        logger.info("AgentOps not available - using no-op implementation")
-        return False
+    # Check if library is available
+    if isinstance(agentops_client, NoOpAgentOps):
+        return
 
-    if not api_key:
-        logger.warning("No AgentOps API key provided - using no-op implementation")
-        return False
+    # Validate API key
+    if not api_key or not api_key.strip() or api_key == "your_agentops_api_key_here":
+        return
 
     if agentops_client is None:
-        logger.error("AgentOps client not initialized")
-        return False
+        return
 
     try:
         agentops_client.init(
@@ -83,16 +76,14 @@ def initialize(
             log_level=log_level,
         )
         is_initialized = True
-        logger.info("AgentOps successfully initialized")
-        return True
-    except Exception as e:
-        logger.error(f"Failed to initialize AgentOps: {e}")
-        return False
+    except Exception:
+        # AgentOps may handle status automatically
+        pass
 
 
 def is_available() -> bool:
     """Check if AgentOps is available and initialized."""
-    return AGENTOPS_LIBRARY_AVAILABLE and is_initialized
+    return not isinstance(agentops_client, NoOpAgentOps) and is_initialized
 
 
 def _set_trace_status(trace: Any, agent_instance: "Agent") -> None:
@@ -125,16 +116,11 @@ def trace_agent_session(func: Callable[..., Any]) -> Callable[..., Any]:
     @functools.wraps(func)
     def wrapper(agent_instance: "Agent", *args: Any, **kwargs: Any) -> Any:
         if not is_available():
-            logger.debug("AgentOps not available - skipping tracing")
             return func(agent_instance, *args, **kwargs)
 
         tags = agent_instance.tags or []
-        logger.debug(
-            f"Starting AgentOps trace for {agent_instance.name} with tags: {tags}"
-        )
 
         if agentops_client is None:
-            logger.error("AgentOps client not available")
             return func(agent_instance, *args, **kwargs)
 
         trace = None
