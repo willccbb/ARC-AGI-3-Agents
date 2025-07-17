@@ -206,7 +206,8 @@ You need to determine how the game works on your own.
 
 To do so, we will provide you with a view of the game corresponding to the bird-eye view of the game.
 
-You can do 4 actions:
+You can do 5 actions:
+- RESET (used to start a new game or level)
 - ACTION1 (MOVE_UP)
 - ACTION2 (MOVE_DOWN)
 - ACTION3 (MOVE_LEFT)
@@ -248,7 +249,7 @@ Hint:
                 model=self.MODEL,
                 messages=messages,
                 tools=tools,
-                tool_choice="auto",
+                tool_choice="required",
             )
 
             self.track_tokens(
