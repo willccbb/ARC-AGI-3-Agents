@@ -18,6 +18,7 @@ from typing import Optional
 import requests
 
 from agents import AVAILABLE_AGENTS, Swarm
+from agents.tracing import initialize as init_agentops
 
 logger = logging.getLogger()
 
@@ -89,7 +90,7 @@ def main() -> None:
     )
     parser.add_argument(
         "-t",
-        "--tags", 
+        "--tags",
         type=str,
         help="Comma-separated list of tags for the scorecard (e.g., 'experiment,v1.0')",
         default=None,
@@ -147,13 +148,16 @@ def main() -> None:
         )
         return
 
-    # Default tags always include agent type
-    tags = ["agent", args.agent]
-    
+    # Start with Empty tags, "agent" and agent name will be added by the Swarm later
+    tags = []
+
     # Append user-provided tags if any
     if args.tags:
         user_tags = [tag.strip() for tag in args.tags.split(",")]
         tags.extend(user_tags)
+
+    # Initialize AgentOps client
+    init_agentops(api_key=os.getenv("AGENTOPS_API_KEY"), log_level=log_level)
 
     swarm = Swarm(
         args.agent,

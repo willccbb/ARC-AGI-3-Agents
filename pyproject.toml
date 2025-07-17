@@ -10,6 +10,7 @@ dependencies = [
     "pillow>=11.2.1",
     "pydantic>=2.11.7",
     "requests>=2.32.4",
+    "smolagents>=1.20.0",
 ]
 
 [dependency-groups]
@@ -20,6 +21,10 @@ dev = [
     "pytest-asyncio>=1.0.0",
     "requests-mock>=1.12.1",
     "ruff>=0.11.4",
+]
+
+agentops = [
+    "agentops>=0.4.18",
 ]
 
 [tool.mypy]

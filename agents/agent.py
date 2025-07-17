@@ -11,6 +11,7 @@ from requests import Response
 
 from .recorder import Recorder
 from .structs import FrameData, GameAction, GameState, Scorecard
+from .tracing import trace_agent_session
 
 logger = logging.getLogger()
 
@@ -34,6 +35,10 @@ class Agent(ABC):
     headers: dict[str, str]
     _session: requests.Session
 
+    # AgentOps tracing attributes
+    trace: Any = None
+    tags: list[str]
+
     def __init__(
         self,
         card_id: str,
@@ -41,12 +46,14 @@ class Agent(ABC):
         agent_name: str,
         ROOT_URL: str,
         record: bool,
+        tags: Optional[list[str]] = None,
     ) -> None:
         self.ROOT_URL = ROOT_URL
         self.card_id = card_id
         self.game_id = game_id
         self.guid = ""
         self.agent_name = agent_name
+        self.tags = tags or []
         self.frames = [FrameData(score=0)]
         self._cleanup = True
         if record:
@@ -59,6 +66,7 @@ class Agent(ABC):
         self._session = requests.Session()
         self._session.headers.update(self.headers)
 
+    @trace_agent_session
     def main(self) -> None:
         """The main agent loop. Play the game_id until finished, then exits."""
         self.timer = time.time()
