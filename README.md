@@ -23,10 +23,10 @@ cp .env-example .env
 export ARC_API_KEY="your_api_key_here"
 ```
 
-4. Run the random agent (generates random actions) against the locksmith game.
+4. Run the random agent (generates random actions) against the ls20 game.
 
 ```bash
-uv run main.py --agent=random --game=locksmith
+uv run main.py --agent=random --game=ls20
 ```
 
 For more information, see the [documentation](https://three.arcprize.org/docs#quick-start) or the [tutorial video](https://youtu.be/xEVg9dcJMkw).
