@@ -151,6 +151,47 @@ class ReasoningAgent(ReasoningLLM):
         img.save(buffer, format="PNG")
         return buffer.getvalue()
 
+    def build_functions(self) -> list[dict[str, Any]]:
+        """Build JSON function description of game actions for LLM."""
+        schema = ReasoningActionResponse.model_json_schema()
+        # The 'name' property is the action to be taken, so we can remove it from the parameters.
+        schema["properties"].pop("name", None)
+        if "required" in schema:
+            schema["required"].remove("name")
+
+        functions: list[dict[str, Any]] = [
+            {
+                "name": action.name,
+                "description": f"Take action {action.name}",
+                "parameters": schema,
+            }
+            for action in [
+                GameAction.ACTION1,
+                GameAction.ACTION2,
+                GameAction.ACTION3,
+                GameAction.ACTION4,
+                GameAction.RESET,
+            ]
+        ]
+        return functions
+
+    def build_tools(self) -> list[dict[str, Any]]:
+        """Support models that expect tool_call format."""
+        functions = self.build_functions()
+        tools: list[dict[str, Any]] = []
+        for f in functions:
+            tools.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": f["name"],
+                        "description": f["description"],
+                        "parameters": f.get("parameters", {}),
+                    },
+                }
+            )
+        return tools
+
     def build_user_prompt(self, latest_frame: FrameData) -> str:
         """Build the user prompt for hypothesis-driven exploration."""
         return textwrap.dedent(
@@ -201,48 +242,28 @@ Hint:
     ) -> ReasoningActionResponse:
         """Call LLM with structured output parsing for reasoning agent."""
         try:
-            # Get JSON Schema from Pydantic model
-            schema = ReasoningActionResponse.model_json_schema()
+            tools = self.build_tools()
 
-            tools = [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": "reasoning_action",
-                        "description": "Select an action based on reasoning.",
-                        "parameters": schema,
-                    },
-                }
-            ]
-
-            # Use structured output with response_format
             response = self.client.chat.completions.create(
                 model=self.MODEL,
                 messages=messages,
                 tools=tools,
-                tool_choice={
-                    "type": "function",
-                    "function": {"name": "reasoning_action"},
-                },
-                reasoning_effort=self.REASONING_EFFORT,
+                tool_choice="auto",
             )
 
-            # Track tokens like parent class
             self.track_tokens(
                 response.usage.total_tokens, response.choices[0].message.content
             )
-
-            # Capture reasoning tokens for model
             self.capture_reasoning_from_response(response)
 
-            # Parse JSON response
             response_message = response.choices[0].message
             tool_calls = response_message.tool_calls
             if tool_calls:
-                function_args = json.loads(tool_calls[0].function.arguments)
+                tool_call = tool_calls[0]
+                function_args = json.loads(tool_call.function.arguments)
+                function_args["name"] = tool_call.function.name
                 return ReasoningActionResponse(**function_args)
 
-            # Fallback or error handling if no tool call is made
             raise ValueError("LLM did not return a tool call.")
 
         except Exception as e:
