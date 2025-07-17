@@ -148,8 +148,8 @@ def main() -> None:
         )
         return
 
-    # Default tags always include agent type
-    tags = ["agent", args.agent]
+    # Start with Empty tags, "agent" and agent name will be added by the Swarm later
+    tags = []
 
     # Append user-provided tags if any
     if args.tags:
