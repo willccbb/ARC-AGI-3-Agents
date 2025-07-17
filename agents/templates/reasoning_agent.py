@@ -18,26 +18,26 @@ logger = logging.getLogger(__name__)
 class ReasoningActionResponse(BaseModel):
     """Action response structure for reasoning agent."""
 
-    name: Literal["ACTION1", "ACTION2", "ACTION3", "ACTION4"] = Field(
+    name: Literal["ACTION1", "ACTION2", "ACTION3", "ACTION4", "RESET"] = Field(
         description="The action to take."
     )
     reason: str = Field(
         description="Detailed reasoning for choosing this action",
         min_length=10,
-        max_length=500,
+        max_length=2000,
     )
-    shortDescription: str = Field(
-        description="Brief description of the action", min_length=5, max_length=100
+    short_description: str = Field(
+        description="Brief description of the action", min_length=5, max_length=500
     )
     hypothesis: str = Field(
         description="Current hypothesis about game mechanics",
         min_length=10,
-        max_length=500,
+        max_length=2000,
     )
-    aggregatedFindings: str = Field(
+    aggregated_findings: str = Field(
         description="Summary of discoveries and learnings so far",
         min_length=10,
-        max_length=1000,
+        max_length=2000,
     )
 
 
@@ -55,6 +55,7 @@ class ReasoningAgent(ReasoningLLM):
         self.history: List[ReasoningActionResponse] = []
         self.screen_history: List[bytes] = []
         self.max_screen_history = 10  # Limit screen history to prevent memory leak
+        self.client = OpenAI()
 
     def clear_history(self) -> None:
         """Clear all history when transitioning between levels."""
@@ -129,7 +130,6 @@ class ReasoningAgent(ReasoningLLM):
                     logger.debug(f"Could not load font for zone labels: {e}")
                 except Exception as e:
                     logger.error(f"Failed to draw zone label at ({x},{y}): {e}")
-                    # Continue without zone labels rather than crash
 
                 # Draw zone boundary
                 zone_width = min(zone_size, width - x) * cell_size
@@ -196,65 +196,35 @@ Hint:
         """
         )
 
-    def build_func_resp_prompt(self, latest_frame: FrameData) -> str:
-        """Build the function response prompt with screen comparison."""
-        if latest_frame.is_empty():
-            return "No frame data available for analysis."
-
-        # Get latest action from history
-        latest_action = self.history[-1] if self.history else None
-
-        # Build prompt
-        previous_action_text = f"Your previous action was: {json.dumps(latest_action.model_dump() if latest_action else None, indent=2)}"
-
-        user_message = f"""{previous_action_text}
-    
-Attached two images in the following order:
-1. Previous screen
-2. Current screen after the previous action
-
-What should you do next?"""
-
-        return user_message
-
     def call_llm_with_structured_output(
         self, messages: List[Dict[str, Any]]
     ) -> ReasoningActionResponse:
         """Call LLM with structured output parsing for reasoning agent."""
         try:
-            # Create OpenAI client
-            client = OpenAI()
-
             # Get JSON Schema from Pydantic model
             schema = ReasoningActionResponse.model_json_schema()
 
-            # Ensure additionalProperties is set to false for all objects
-            def add_additional_properties_false(obj: Any) -> None:
-                if isinstance(obj, dict):
-                    if obj.get("type") == "object":
-                        obj["additionalProperties"] = False
-                    for key, value in obj.items():
-                        add_additional_properties_false(value)
-                elif isinstance(obj, list):
-                    for item in obj:
-                        add_additional_properties_false(item)
-
-            add_additional_properties_false(schema)
+            tools = [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "reasoning_action",
+                        "description": "Select an action based on reasoning.",
+                        "parameters": schema,
+                    },
+                }
+            ]
 
             # Use structured output with response_format
-            response = client.chat.completions.create(
+            response = self.client.chat.completions.create(
                 model=self.MODEL,
                 messages=messages,
-                max_completion_tokens=8000,
-                reasoning_effort=self.REASONING_EFFORT,
-                response_format={
-                    "type": "json_schema",
-                    "json_schema": {
-                        "name": "ReasoningActionResponse",
-                        "schema": schema,
-                        "strict": True,
-                    },
+                tools=tools,
+                tool_choice={
+                    "type": "function",
+                    "function": {"name": "reasoning_action"},
                 },
+                reasoning_effort=self.REASONING_EFFORT,
             )
 
             # Track tokens like parent class
@@ -266,9 +236,14 @@ What should you do next?"""
             self.capture_reasoning_from_response(response)
 
             # Parse JSON response
-            response_text = response.choices[0].message.content
-            response_data = json.loads(response_text)
-            return ReasoningActionResponse(**response_data)
+            response_message = response.choices[0].message
+            tool_calls = response_message.tool_calls
+            if tool_calls:
+                function_args = json.loads(tool_calls[0].function.arguments)
+                return ReasoningActionResponse(**function_args)
+
+            # Fallback or error handling if no tool call is made
+            raise ValueError("LLM did not return a tool call.")
 
         except Exception as e:
             logger.error(f"LLM structured call failed: {e}")
@@ -289,13 +264,9 @@ What should you do next?"""
         # Build user message with images
         user_message_content: List[Dict[str, Any]] = []
 
-        # Get truly previous screen (before current action) - use -2 if available
-        previous_screen = None
-        if len(self.screen_history) >= 2:
-            previous_screen = self.screen_history[-2]
-        elif len(self.screen_history) == 1:
-            previous_screen = self.screen_history[-1]
-            
+        # Use the last screen from history as the 'previous_screen'
+        previous_screen = self.screen_history[-1] if self.screen_history else None
+
         if previous_screen:
             user_message_content.extend(
                 [
@@ -342,43 +313,53 @@ What should you do next?"""
 
         return result
 
-    def choose_action(self, frames: List[FrameData], latest_frame: FrameData) -> GameAction:
+    def choose_action(
+        self, frames: List[FrameData], latest_frame: FrameData
+    ) -> GameAction:
         """Choose action using parent class tool calling with reasoning enhancement."""
-        
-        # Store reasoning context before calling parent
-        if len(self.messages) > 0:  # Not first action
-            action_response = self.define_next_action(latest_frame)
-            self.history.append(action_response)
-            
-            # Create reasoning metadata
-            reasoning_meta = {
-                "model": self.MODEL,
-                "reasoning_effort": self.REASONING_EFFORT,
-                "reasoning_tokens": self._last_reasoning_tokens,
-                "total_reasoning_tokens": self._total_reasoning_tokens,
-                "agent_type": "reasoning_agent",
-                "hypothesis": action_response.hypothesis,
-                "aggregated_findings": action_response.aggregatedFindings,
-                "response_preview": action_response.reason[:200] + "..." 
-                    if len(action_response.reason) > 200 else action_response.reason,
-            }
-        else:
-            reasoning_meta = {}
-        
-        # Use parent class tool calling
-        action = super().choose_action(frames, latest_frame)
-        
-        # Attach reasoning metadata
-        if reasoning_meta:
-            action.reasoning = {
-                **reasoning_meta,
-                "action_chosen": action.name,
-                "game_context": {
-                    "score": latest_frame.score,
-                    "state": latest_frame.state.name,
-                    "action_counter": self.action_counter,
-                    "frame_count": len(frames),
-                }
-            }
-        
+        if latest_frame.full_reset:
+            self.clear_history()
+            return GameAction.RESET
+
+        if not self.history:  # First action must be RESET
+            action = GameAction.RESET
+            initial_response = ReasoningActionResponse(
+                name="RESET",
+                reason="Initial action to start the game and observe the environment.",
+                short_description="Start game",
+                hypothesis="The game requires a RESET to begin.",
+                aggregated_findings="No findings yet.",
+            )
+            self.history.append(initial_response)
+            return action
+
+        # Define the next action based on reasoning
+        action_response = self.define_next_action(latest_frame)
+        self.history.append(action_response)
+
+        # Map the reasoning action name to a GameAction
+        action = GameAction.from_name(action_response.name)
+
+        # Create and attach reasoning metadata
+        reasoning_meta = {
+            "model": self.MODEL,
+            "reasoning_effort": self.REASONING_EFFORT,
+            "reasoning_tokens": self._last_reasoning_tokens,
+            "total_reasoning_tokens": self._total_reasoning_tokens,
+            "agent_type": "reasoning_agent",
+            "hypothesis": action_response.hypothesis,
+            "aggregated_findings": action_response.aggregated_findings,
+            "response_preview": action_response.reason[:200] + "..."
+            if len(action_response.reason) > 200
+            else action_response.reason,
+            "action_chosen": action.name,
+            "game_context": {
+                "score": latest_frame.score,
+                "state": latest_frame.state.name,
+                "action_counter": self.action_counter,
+                "frame_count": len(frames),
+            },
+        }
+        action.reasoning = reasoning_meta
+
         return action
