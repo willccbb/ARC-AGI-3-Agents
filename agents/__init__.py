@@ -7,6 +7,7 @@ from .recorder import Recorder
 from .swarm import Swarm
 from .templates.llm_agents import LLM, FastLLM, GuidedLLM, ReasoningLLM
 from .templates.random_agent import Random
+from .templates.reasoning_agent import ReasoningAgent
 from .templates.smolagents import SmolCodingAgent, SmolVisionAgent
 
 load_dotenv()
@@ -21,6 +22,9 @@ AVAILABLE_AGENTS: dict[str, Type[Agent]] = {
 for rec in Recorder.list():
     AVAILABLE_AGENTS[rec] = Playback
 
+# update the agent dictionary to include subclasses of LLM class
+AVAILABLE_AGENTS["reasoningagent"] = ReasoningAgent
+
 __all__ = [
     "Swarm",
     "Random",
@@ -28,6 +32,7 @@ __all__ = [
     "FastLLM",
     "ReasoningLLM",
     "GuidedLLM",
+    "ReasoningAgent",
     "SmolCodingAgent",
     "SmolVisionAgent",
     "Agent",
