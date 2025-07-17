@@ -87,10 +87,15 @@ To submit your agent for the ARC-AGI-3 competition, please use this form: https:
 
 We welcome contributions! To contribute to ARC-AGI-3-Agents, please follow these steps:
 
-1. Fork the repository and create a new branch for your feature or bugfix.
-2. Make your changes and ensure that all tests pass, you are welcome to add more tests for your specific fixes.
-3. Write clear commit messages describing your changes.
-4. Open a pull request with a description of your changes and the motivation behind them.
+1.  Fork the repository and create a new branch for your feature or bugfix.
+2.  Make your changes and ensure that all tests pass, you are welcome to add more tests for your specific fixes.
+3.  This project uses `ruff` for linting and formatting. Please set up the pre-commit hooks to ensure your contributions match the project's style.
+    ```bash
+    pip install pre-commit
+    pre-commit install
+    ```
+4.  Write clear commit messages describing your changes.
+5.  Open a pull request with a description of your changes and the motivation behind them.
 
 If you have questions or need help, feel free to open an issue.
 
