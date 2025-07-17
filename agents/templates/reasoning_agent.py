@@ -125,8 +125,11 @@ class ReasoningAgent(ReasoningLLM):
                         fill="#FFFFFF",
                         font=font,
                     )
-                except Exception:
-                    pass
+                except (ImportError, OSError) as e:
+                    logger.debug(f"Could not load font for zone labels: {e}")
+                except Exception as e:
+                    logger.error(f"Failed to draw zone label at ({x},{y}): {e}")
+                    # Continue without zone labels rather than crash
 
                 # Draw zone boundary
                 zone_width = min(zone_size, width - x) * cell_size
@@ -190,26 +193,13 @@ Hint:
 - The player has a blue body and a yellow head.
 - There are walls in black.
 - The door has a pink border and a shape inside.
-        """.format()
+        """
         )
 
     def build_func_resp_prompt(self, latest_frame: FrameData) -> str:
         """Build the function response prompt with screen comparison."""
         if latest_frame.is_empty():
             return "No frame data available for analysis."
-
-        # Extract current grid
-        current_grid = latest_frame.frame[0] if latest_frame.frame else []
-        if not current_grid:
-            return "No grid data available."
-
-        # Generate map image
-        map_image = self.generate_grid_image_with_zone(current_grid)
-
-        # Store current frame image in history with memory leak prevention
-        self.screen_history.append(map_image)
-        if len(self.screen_history) > self.max_screen_history:
-            self.screen_history.pop(0)  # Remove oldest image
 
         # Get latest action from history
         latest_action = self.history[-1] if self.history else None
@@ -299,8 +289,13 @@ What should you do next?"""
         # Build user message with images
         user_message_content: List[Dict[str, Any]] = []
 
-        # Add previous screen if available
-        previous_screen = self.screen_history[-1] if self.screen_history else None
+        # Get truly previous screen (before current action) - use -2 if available
+        previous_screen = None
+        if len(self.screen_history) >= 2:
+            previous_screen = self.screen_history[-2]
+        elif len(self.screen_history) == 1:
+            previous_screen = self.screen_history[-1]
+            
         if previous_screen:
             user_message_content.extend(
                 [
@@ -317,13 +312,14 @@ What should you do next?"""
 
         user_message_text = f"Your previous action was: {json.dumps(latest_action.model_dump() if latest_action else None, indent=2)}\n\nAttached two images in the following order:\n1. Previous screen\n2. Current screen after the previous action\n\nWhat should you do next?"
 
+        current_image_b64 = base64.b64encode(map_image).decode()
         user_message_content.extend(
             [
                 {"type": "text", "text": user_message_text},
                 {
                     "type": "image_url",
                     "image_url": {
-                        "url": f"data:image/png;base64,{base64.b64encode(map_image).decode()}",
+                        "url": f"data:image/png;base64,{current_image_b64}",
                         "detail": "high",
                     },
                 },
@@ -339,87 +335,50 @@ What should you do next?"""
         # Call LLM with structured output
         result = self.call_llm_with_structured_output(messages)
 
+        # Store current screen for next iteration (after using it)
+        self.screen_history.append(map_image)
+        if len(self.screen_history) > self.max_screen_history:
+            self.screen_history.pop(0)
+
         return result
 
-    def choose_action(
-        self, frames: List[FrameData], latest_frame: FrameData
-    ) -> GameAction:
-        """Choose action for the reasoning agent."""
-        # CRITICAL: First action must always be RESET to initialize the game
-        if len(self.messages) == 0:
-            # Initialize messages for the first RESET action
-            user_prompt = self.build_user_prompt(latest_frame)
-            message0 = {"role": "user", "content": user_prompt}
-            self.push_message(message0)
-
-            # Add assistant message for RESET call
-            message1 = {
-                "role": "assistant",
-                "tool_calls": [
-                    {
-                        "id": self._latest_tool_call_id,
-                        "type": "function",
-                        "function": {
-                            "name": "RESET",
-                            "arguments": json.dumps({}),
-                        },
-                    }
-                ],
+    def choose_action(self, frames: List[FrameData], latest_frame: FrameData) -> GameAction:
+        """Choose action using parent class tool calling with reasoning enhancement."""
+        
+        # Store reasoning context before calling parent
+        if len(self.messages) > 0:  # Not first action
+            action_response = self.define_next_action(latest_frame)
+            self.history.append(action_response)
+            
+            # Create reasoning metadata
+            reasoning_meta = {
+                "model": self.MODEL,
+                "reasoning_effort": self.REASONING_EFFORT,
+                "reasoning_tokens": self._last_reasoning_tokens,
+                "total_reasoning_tokens": self._total_reasoning_tokens,
+                "agent_type": "reasoning_agent",
+                "hypothesis": action_response.hypothesis,
+                "aggregated_findings": action_response.aggregatedFindings,
+                "response_preview": action_response.reason[:200] + "..." 
+                    if len(action_response.reason) > 200 else action_response.reason,
             }
-            self.push_message(message1)
-            return GameAction.RESET
-
-        # Build function response and add to messages
-        function_response = self.build_func_resp_prompt(latest_frame)
-        message2 = {
-            "role": "tool",
-            "tool_call_id": self._latest_tool_call_id,
-            "content": str(function_response),
-        }
-        self.push_message(message2)
-
-        # Get action using structured output approach
-        action_response = self.define_next_action(latest_frame)
-
-        # Store action in history
-        self.history.append(action_response)
-
-        # Convert to tool call format for messages
-        message_structured = {
-            "role": "assistant",
-            "tool_calls": [
-                {
-                    "id": self._latest_tool_call_id,
-                    "type": "function",
-                    "function": {
-                        "name": action_response.name,
-                        "arguments": json.dumps({}),
-                    },
+        else:
+            reasoning_meta = {}
+        
+        # Use parent class tool calling
+        action = super().choose_action(frames, latest_frame)
+        
+        # Attach reasoning metadata
+        if reasoning_meta:
+            action.reasoning = {
+                **reasoning_meta,
+                "action_chosen": action.name,
+                "game_context": {
+                    "score": latest_frame.score,
+                    "state": latest_frame.state.name,
+                    "action_counter": self.action_counter,
+                    "frame_count": len(frames),
                 }
-            ],
-        }
-        self.push_message(message_structured)
-
-        # Convert action name to GameAction directly
-        action = GameAction.from_name(action_response.name)
-        action.reasoning = {
-            "model": self.MODEL,
-            "action_chosen": action.name,
-            "reasoning_effort": self.REASONING_EFFORT,
-            "reasoning_tokens": self._last_reasoning_tokens,
-            "total_reasoning_tokens": self._total_reasoning_tokens,
-            "game_context": {
-                "score": latest_frame.score,
-                "state": latest_frame.state.name,
-                "action_counter": self.action_counter,
-                "frame_count": len(frames),
-            },
-            "agent_type": "reasoning_agent",
-            "hypothesis": action_response.hypothesis,
-            "aggregated_findings": action_response.aggregatedFindings,
-            "response_preview": action_response.reason[:200] + "..."
-            if len(action_response.reason) > 200
-            else action_response.reason,
-        }
-
+            }
+        
         return action
