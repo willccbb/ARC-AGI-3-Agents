@@ -105,7 +105,7 @@ def main() -> None:
     print(f"{ROOT_URL}/api/games")
 
     # Get the list of games from the API
-    games = []
+    full_games = []
     try:
         with requests.Session() as session:
             session.headers.update(HEADERS)
@@ -113,7 +113,7 @@ def main() -> None:
 
         if r.status_code == 200:
             try:
-                games = [g["game_id"] for g in r.json()]
+                full_games = [g["game_id"] for g in r.json()]
             except (ValueError, KeyError) as e:
                 logger.error(f"Failed to parse games response: {e}")
                 logger.error(f"Response content: {r.text[:200]}")
@@ -126,26 +126,34 @@ def main() -> None:
         logger.error(f"Failed to connect to API server: {e}")
 
     # For playback agents, we can derive the game from the recording filename
-    if not games and args.agent and args.agent.endswith(".recording.jsonl"):
+    if not full_games and args.agent and args.agent.endswith(".recording.jsonl"):
         from agents.recorder import Recorder
 
         game_prefix = Recorder.get_prefix_one(args.agent)
-        games = [game_prefix]
+        full_games = [game_prefix]
         logger.info(
             f"Using game '{game_prefix}' derived from playback recording filename"
         )
+    games = full_games[:]
     if args.game:
         filters = args.game.split(",")
         games = [
-            gid for gid in games if any(gid.startswith(prefix) for prefix in filters)
+            gid
+            for gid in full_games
+            if any(gid.startswith(prefix) for prefix in filters)
         ]
 
     logger.info(f"Game list: {games}")
 
     if not games:
-        logger.error(
-            "No games available to play. Check API connection or recording file."
-        )
+        if full_games:
+            logger.error(
+                f"The specified game '{args.game}' does not exist or is not available with your API key. Please try a different game."
+            )
+        else:
+            logger.error(
+                "No games available to play. Check API connection or recording file."
+            )
         return
 
     # Start with Empty tags, "agent" and agent name will be added by the Swarm later
