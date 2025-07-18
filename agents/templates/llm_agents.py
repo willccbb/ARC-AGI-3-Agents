@@ -114,11 +114,13 @@ class LLM(Agent):
         if self.DO_OBSERVATION:
             logger.info("Sending to Assistant for observation...")
             try:
-                response = client.chat.completions.create(
-                    model=self.MODEL,
-                    messages=self.messages,
-                    reasoning_effort=self.REASONING_EFFORT,
-                )
+                create_kwargs = {
+                    "model": self.MODEL,
+                    "messages": self.messages,
+                }
+                if self.REASONING_EFFORT is not None:
+                    create_kwargs["reasoning_effort"] = self.REASONING_EFFORT
+                response = client.chat.completions.create(**create_kwargs)
             except openai.BadRequestError as e:
                 logger.info(f"Message dump: {self.messages}")
                 raise e
@@ -144,13 +146,15 @@ class LLM(Agent):
         if self.MODEL_REQUIRES_TOOLS:
             logger.info("Sending to Assistant for action...")
             try:
-                response = client.chat.completions.create(
-                    model=self.MODEL,
-                    messages=self.messages,
-                    tools=tools,
-                    tool_choice="required",
-                    reasoning_effort=self.REASONING_EFFORT,
-                )
+                create_kwargs = {
+                    "model": self.MODEL,
+                    "messages": self.messages,
+                    "tools": tools,
+                    "tool_choice": "required",
+                }
+                if self.REASONING_EFFORT is not None:
+                    create_kwargs["reasoning_effort"] = self.REASONING_EFFORT
+                response = client.chat.completions.create(**create_kwargs)
             except openai.BadRequestError as e:
                 logger.info(f"Message dump: {self.messages}")
                 raise e
@@ -180,13 +184,15 @@ class LLM(Agent):
         else:
             logger.info("Sending to Assistant for action...")
             try:
-                response = client.chat.completions.create(
-                    model=self.MODEL,
-                    messages=self.messages,
-                    functions=functions,
-                    function_call="auto",
-                    reasoning_effort=self.REASONING_EFFORT,
-                )
+                create_kwargs = {
+                    "model": self.MODEL,
+                    "messages": self.messages,
+                    "functions": functions,
+                    "function_call": "auto",
+                }
+                if self.REASONING_EFFORT is not None:
+                    create_kwargs["reasoning_effort"] = self.REASONING_EFFORT
+                response = client.chat.completions.create(**create_kwargs)
             except openai.BadRequestError as e:
                 logger.info(f"Message dump: {self.messages}")
                 raise e
