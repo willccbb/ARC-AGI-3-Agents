@@ -48,6 +48,7 @@ def build_agent(
     reasoning_effort: str | None = None,
     as_image: bool = True,
 ) -> Pregel[State, entrypoint.final[ChatCompletionMessage, State]]:
+    """Define the agent logic."""
     openai_client = OpenAI()
     model_kwargs = {"reasoning_effort": reasoning_effort} if reasoning_effort else {}
 
