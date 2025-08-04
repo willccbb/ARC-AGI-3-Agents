@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 from .agent import Agent, Playback
 from .recorder import Recorder
 from .swarm import Swarm
-from .templates.langgraph_agent import LangGraph, LangGraphTextOnly
 from .templates.langgraph import LangGraph
+from .templates.langgraph_functional_agent import LangGraphFunc, LangGraphTextOnly
 from .templates.langgraph_random_agent import LangGraphRandom
 from .templates.llm_agents import LLM, FastLLM, GuidedLLM, ReasoningLLM
 from .templates.random_agent import Random
@@ -32,6 +32,8 @@ __all__ = [
     "Swarm",
     "Random",
     "LangGraph",
+    "LangGraphFunc",
+    "LangGraphTextOnly",
     "LangGraphRandom",
     "LLM",
     "FastLLM",
@@ -43,7 +45,5 @@ __all__ = [
     "Agent",
     "Recorder",
     "Playback",
-    "LangGraph",
-    "LangGraphTextOnly",
     "AVAILABLE_AGENTS",
 ]

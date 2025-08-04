@@ -3,7 +3,7 @@ import time
 from typing import Any, TypedDict
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.state import CompiledStateGraph
+from langgraph.pregel import Pregel
 
 from ..agent import Agent
 from ..structs import FrameData, GameAction, GameState
@@ -26,7 +26,7 @@ class LangGraphRandom(Agent):
 
     MAX_ACTIONS = 80
 
-    workflow: CompiledStateGraph[RandomAgentState, RandomAgentState, RandomAgentOutput]
+    workflow: Pregel[RandomAgentState, Any, RandomAgentState, RandomAgentOutput]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)

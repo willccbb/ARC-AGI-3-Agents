@@ -1,3 +1,5 @@
+"""Uses LangGraph's functional API to build an agent."""
+
 import base64
 import io
 import json
@@ -121,7 +123,7 @@ def build_agent(
 # Required API
 
 
-class LangGraph(LLM, Agent):
+class LangGraphFunc(LLM, Agent):
     """An agent that always selects actions at random."""
 
     MAX_ACTIONS = 80
@@ -171,7 +173,7 @@ class LangGraph(LLM, Agent):
             rt.end(outputs={"state": self.state})
 
 
-class LangGraphTextOnly(LangGraph, Agent):
+class LangGraphTextOnly(LangGraphFunc, Agent):
     USE_IMAGE = False
 
 
