@@ -2,7 +2,7 @@ import sqlite3
 from typing import Any, cast
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.state import CompiledStateGraph
+from langgraph.pregel import Pregel
 from langgraph.store.sqlite import SqliteStore
 
 from ...agent import Agent
@@ -17,7 +17,7 @@ class LangGraph(Agent):
     MAX_ACTIONS = 20
 
     agent_state: AgentState
-    workflow: CompiledStateGraph[AgentState, AgentState, AgentState]
+    workflow: Pregel[AgentState, Any, AgentState, AgentState]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)

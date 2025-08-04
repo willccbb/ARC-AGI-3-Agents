@@ -122,14 +122,16 @@ class Swarm:
             json=json.loads(json_str),
             headers=self.headers,
         )
-        
+
         try:
             response_data = r.json()
         except ValueError:
             raise Exception(f"Failed to open scorecard: {r.status_code} - {r.text}")
 
         if not r.ok:
-            raise Exception(f"API error during open scorecard: {r.status_code} - {response_data}")
+            raise Exception(
+                f"API error during open scorecard: {r.status_code} - {response_data}"
+            )
 
         return response_data["card_id"]
 
@@ -141,7 +143,7 @@ class Swarm:
             json=json.loads(json_str),
             headers=self.headers,
         )
-        
+
         try:
             response_data = r.json()
         except ValueError:
@@ -149,9 +151,11 @@ class Swarm:
             return None
 
         if not r.ok:
-            logger.warning(f"API error during close scorecard: {r.status_code} - {response_data}")
+            logger.warning(
+                f"API error during close scorecard: {r.status_code} - {response_data}"
+            )
             return None
-            
+
         return Scorecard.model_validate(response_data)
 
     def cleanup(self, scorecard: Optional[Scorecard] = None) -> None:
