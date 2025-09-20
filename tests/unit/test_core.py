@@ -1,6 +1,6 @@
 import pytest
 
-from agents.structs import (
+from arc_agi_3_agents.structs import (
     ActionInput,
     Card,
     FrameData,
@@ -8,8 +8,8 @@ from agents.structs import (
     GameState,
     Scorecard,
 )
-from agents.templates.langgraph_random_agent import LangGraphRandom
-from agents.templates.random_agent import Random
+from arc_agi_3_agents.templates.langgraph_random_agent import LangGraphRandom
+from arc_agi_3_agents.templates.random_agent import Random
 
 
 @pytest.mark.unit

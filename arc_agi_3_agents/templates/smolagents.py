@@ -13,8 +13,8 @@ from smolagents import (
     tool,
 )
 
-from agents.structs import FrameData, GameAction, GameState
-from agents.templates.llm_agents import LLM
+from arc_agi_3_agents.structs import FrameData, GameAction, GameState
+from arc_agi_3_agents.templates.llm_agents import LLM
 
 from ..agent import Agent
 

@@ -16,7 +16,7 @@ from langsmith.schemas import Attachment
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessage
 
-from agents.templates.llm_agents import LLM
+from arc_agi_3_agents.templates.llm_agents import LLM
 
 from ..agent import Agent
 from ..structs import FrameData, GameAction
