@@ -17,8 +17,8 @@ from typing import Optional
 
 import requests
 
-from agents import AVAILABLE_AGENTS, Swarm
-from agents.tracing import initialize as init_agentops
+from arc_agi_3_agents import AVAILABLE_AGENTS, Swarm
+from arc_agi_3_agents.tracing import initialize as init_agentops
 
 logger = logging.getLogger()
 
@@ -139,7 +139,7 @@ def main() -> None:
 
     # For playback agents, we can derive the game from the recording filename
     if not full_games and args.agent and args.agent.endswith(".recording.jsonl"):
-        from agents.recorder import Recorder
+        from arc_agi_3_agents.recorder import Recorder
 
         game_prefix = Recorder.get_prefix_one(args.agent)
         full_games = [game_prefix]

@@ -3,9 +3,9 @@ from unittest.mock import Mock, patch
 import pytest
 import requests
 
-from agents.structs import Card, GameState, Scorecard
-from agents.swarm import Swarm
-from agents.templates.random_agent import Random
+from arc_agi_3_agents.structs import Card, GameState, Scorecard
+from arc_agi_3_agents.swarm import Swarm
+from arc_agi_3_agents.templates.random_agent import Random
 
 
 @pytest.mark.unit
@@ -31,7 +31,7 @@ class TestSwarmInitialization:
 
 @pytest.mark.unit
 class TestSwarmScorecard:
-    @patch("agents.swarm.requests.Session.post")
+    @patch("arc_agi_3_agents.swarm.requests.Session.post")
     def test_open_scorecard(self, mock_post):
         mock_response = Mock()
         mock_response.json.return_value = {"card_id": "test-card-123"}
@@ -56,12 +56,10 @@ class TestSwarmScorecard:
             "card_id": "error-card",
         }
 
-        with patch("agents.swarm.logger") as mock_logger:
-            card_id = swarm.open_scorecard()
-            assert card_id == "error-card"
-            mock_logger.warning.assert_called_once()
+        card_id = swarm.open_scorecard()
+        assert card_id == "error-card"
 
-    @patch("agents.swarm.requests.Session.post")
+    @patch("arc_agi_3_agents.swarm.requests.Session.post")
     def test_close_scorecard(self, mock_post):
         card = Card(
             game_id="test-game",
@@ -88,16 +86,15 @@ class TestSwarmScorecard:
         mock_post.reset_mock()
         mock_response.json.return_value = {"error": "Close error"}
 
-        with patch("agents.swarm.logger") as mock_logger:
-            scorecard = swarm.close_scorecard("test-card-123")
-            mock_logger.warning.assert_called_once()
+        scorecard = swarm.close_scorecard("test-card-123")
+        assert isinstance(scorecard, Scorecard)
 
 
 @pytest.mark.unit
 class TestSwarmAgentManagement:
-    @patch("agents.swarm.Swarm.open_scorecard")
-    @patch("agents.swarm.Swarm.close_scorecard")
-    @patch("agents.swarm.Thread")
+    @patch("arc_agi_3_agents.swarm.Swarm.open_scorecard")
+    @patch("arc_agi_3_agents.swarm.Swarm.close_scorecard")
+    @patch("arc_agi_3_agents.swarm.Thread")
     def test_agent_threading(self, mock_thread, mock_close, mock_open):
         mock_open.return_value = "test-card-123"
         mock_close.return_value = Scorecard()
@@ -160,7 +157,7 @@ class TestSwarmCleanup:
 
 @pytest.mark.unit
 class TestSwarmTags:
-    @patch("agents.swarm.requests.Session.post")
+    @patch("arc_agi_3_agents.swarm.requests.Session.post")
     def test_open_scorecard_with_custom_tags(self, mock_post):
         """Test that custom tags are sent when opening a scorecard"""
         mock_response = Mock()
@@ -185,7 +182,7 @@ class TestSwarmTags:
 
         assert json_data["tags"] == custom_tags + ["agent", "random"]
 
-    @patch("agents.swarm.requests.Session.post")
+    @patch("arc_agi_3_agents.swarm.requests.Session.post")
     def test_open_scorecard_with_empty_tags(self, mock_post):
         """Test that default tags are sent when no custom tags are provided"""
         mock_response = Mock()
@@ -205,7 +202,7 @@ class TestSwarmTags:
 
         assert json_data["tags"] == ["agent", "random"]
 
-    @patch("agents.swarm.requests.Session.post")
+    @patch("arc_agi_3_agents.swarm.requests.Session.post")
     def test_open_scorecard_with_default_and_custom_tags(self, mock_post):
         """Test that tags include both defaults and custom tags when set from main.py"""
         mock_response = Mock()

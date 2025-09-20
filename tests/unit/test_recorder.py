@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from agents.recorder import RECORDING_SUFFIX, Recorder
+from arc_agi_3_agents.recorder import RECORDING_SUFFIX, Recorder
 
 
 @pytest.mark.unit
@@ -232,8 +232,11 @@ class TestRecorderErrorHandling:
         os.chmod(recorder.filename, 0o444)
 
         try:
-            with pytest.raises(PermissionError):
+            if os.geteuid() == 0:
                 recorder.record({"test": "data"})
+            else:
+                with pytest.raises(PermissionError):
+                    recorder.record({"test": "data"})
         finally:
             os.chmod(recorder.filename, 0o644)
 

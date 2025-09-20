@@ -3,7 +3,7 @@ import shutil
 
 import pytest
 
-from agents.structs import FrameData, GameState
+from arc_agi_3_agents.structs import FrameData, GameState
 
 
 def get_test_recordings_dir():
